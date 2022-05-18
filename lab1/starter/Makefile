@@ -7,11 +7,11 @@ LDFLAGS = -g   # debugging symbols in build
 LDLIBS = -lz   # link with libz
 
 # For students 
-LIB_UTIL = zutil.o crc.o
-SRCS   = main.c crc.c zutil.c
-OBJS   = main.o $(LIB_UTIL) pnginfo.o 
+# LIB_UTIL = zutil.o crc.o
+SRCS   = pnginfo.c
+OBJS   = pnginfo.o 
 
-TARGETS= main.out pnginfo.out
+TARGETS= pnginfo.out
 
 all: ${TARGETS}
 
