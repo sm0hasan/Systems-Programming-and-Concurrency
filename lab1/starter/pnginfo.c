@@ -1,6 +1,7 @@
 #include <stdio.h>	/* printf needs to include this header file */
 #include <ctype.h>
 #include <stdlib.h>
+#include "png_util/lab_png.h"
 
 /**
  *@brief: main function that lists all command line arguments
@@ -14,31 +15,36 @@
  */
 int main(int argc, char *argv[]) 
 {
-    int i;
-    char *readed_file;
+    int k;
+    U32 readed_file[100];
     int tracker = 0;
     FILE *files;
-    char *png_bytes[3] = {"50", "4E", "47"};
+    int *png_bytes = -1991225785;
 
-    readed_file = (char*)malloc(1*8);
-    files = fopen(argv[1], "r");
-    fread(readed_file, 1, 8, files);
-    printf(readed_file);
+    // readed_file = (char*)malloc(1*8);
+    files = fopen(argv[1], "rb");
 
-    for(i = 0; i < 2; i++){
-        if(readed_file[i+1] == png_bytes[i]){
-            tracker = 0;
-        }else{
-            tracker = 1;
-            break;
-        }
+    if(files == NULL){
+        printf("failed to open file");
+        return 3;
+    }
+    fread(readed_file, sizeof(readed_file), 8, files);
+
+    for(k=0; k<8; k++){
+        printf("%0x\n", ntohl(readed_file[k]));
     }
 
-    if(tracker == 1){
-        printf("its not a png file");
+    int i = ntohl(readed_file[0]);
+    printf("%d", i);
+    if(i == png_bytes){
+        printf("ye");
     }else{
-        printf("yes it is");
+        printf("Not a PNG file");
+        return 0;
     }
+
+
+
 
 
     // printf("A complete list of command line arguments:\n");
