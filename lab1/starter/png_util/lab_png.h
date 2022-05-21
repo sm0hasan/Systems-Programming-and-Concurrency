@@ -33,7 +33,7 @@ typedef struct chunk {
     U8  type[4]; /* chunk type */
     U8  *p_data; /* pointer to location where the actual data are */
     U32 crc;     /* CRC field  */
-} *chunk_p;
+} chunk_p;
 
 /* note that there are 13 Bytes valid data, compiler will padd 3 bytes to make
    the structure 16 Bytes due to alignment. So do not use the size of this
@@ -49,21 +49,80 @@ typedef struct data_IHDR {// IHDR chunk data
     U8  compression;  /* only method 0 is defined for now */
     U8  filter;       /* only method 0 is defined for now */
     U8  interlace;    /* =0: no interlace; =1: Adam7 interlace */
-} *data_IHDR_p;
+} data_IHDR_p;
 
 /* A simple PNG file format, three chunks only*/
 typedef struct simple_PNG {
     struct chunk *p_IHDR;
     struct chunk *p_IDAT;  /* only handles one IDAT chunk */  
     struct chunk *p_IEND;
-} *simple_PNG_p;
+} simple_PNG_p;
 
 /******************************************************************************
  * FUNCTION PROTOTYPES 
  *****************************************************************************/
 int is_png(U8 *buf, size_t n);
-int get_png_height(struct data_IHDR *buf);
-int get_png_width(struct data_IHDR *buf);
+int get_png_height(struct data_IHDR buf){
+    int i;
+    i = buf.height;
+    return i;
+};
+int get_png_width(struct data_IHDR buf){
+    int i;
+    i = buf.width;
+    return i;
+};
 int get_png_data_IHDR(struct data_IHDR *out, FILE *fp, long offset, int whence);
 
 /* declare your own functions prototypes here */
+chunk_p get_chunk(U32 readed_files[], char chunk_type){
+    ///////Declaration///////
+    char ihdr = "ihdr";
+    char idat = "idat";
+    char iend = "iend";
+    int front_num = 0;
+    int back_num = 0;
+    int num_ihdr = 17490;
+    int num_idat = 17473;
+    int num_iend = 17442;
+    int if_iend = 0;
+    int i = 0;
+    int tracker = 0;
+    U32 data_chunk[100];
+    chunk_p chunk;
+    /////////////////////////
+    if(chunk_type == ihdr){
+        front_num = num_ihdr;
+        back_num = num_idat;
+    }else if(chunk_type == idat){
+        front_num = num_idat;
+        back_num = num_iend;
+    }else if(chunk_type == iend){
+        front_num = num_iend;
+        if_iend = 1;
+    }
+    ///////////Automated code for extracting chunk//////////////
+    int index = 0;
+    for(readed_files[i+1] != NULL; i<sizeof(readed_files); i++){
+        if(tracker == 1){
+            data_chunk[index] = readed_files[i];
+            ++index;
+        }
+        if((ntohl(readed_files[i])<<16)>>16 == front_num){
+            tracker = 1;
+        }
+        if(if_iend == 0){
+            if((ntohl(readed_files[i])<<16)>>16 == back_num){
+                tracker = 0;
+                break;
+            }
+        }
+    }
+    for(i=0; i<sizeof(data_chunk);i++){
+        printf("%0x\n", ntohl(data_chunk[i]));
+    }
+    ////////////////////////////////////////////////////////////
+
+
+    return chunk;
+}
