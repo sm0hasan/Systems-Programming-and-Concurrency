@@ -106,12 +106,16 @@ chunk_p get_chunk(U32 readed_files[], char chunk_type){
         for(i; i<100 && readed_files[i+1]!=NULL; i++){
             if(tracker == 1){
                 data_chunk[0] = ntohl(readed_files[i]);
+                data_chunk[0] = ((data_chunk[0]<<8)>>8)*256;
+                // printf("%0x\n", data_chunk[0]);
                 data_chunk[1] = ntohl(readed_files[i+1]);
-                temp[0] = (data_chunk[0]<<8)>>8;
-                temp[1] = data_chunk[1]>>24;
-                data_chunk[0] = strcat(temp[0], temp[1]);
+                data_chunk[1] = (data_chunk[1]>>24);
+                // printf("%0x\n", data_chunk[1]);
+                data_chunk[0] = ntohl(data_chunk[0] + data_chunk[1]);
+                data_chunk[1] = 0;
+                break;
             }
-            if((ntohl(readed_files[i])<<16)>>16 == front_num){
+            if((ntohl(readed_files[i])<<16)>>16 == num_iend){
                 tracker = 1;
             }
         }
@@ -135,12 +139,12 @@ chunk_p get_chunk(U32 readed_files[], char chunk_type){
             }
 
         }
-        for(i=0; i<20;i++){
-            printf("%0x\n", ntohl(data_chunk[i]));
-        }
+
     }
     ////////////////////////////////////////////////////////////
-
+    for(i=0; i<20;i++){
+        printf("%0x\n", ntohl(data_chunk[i]));
+    }
 
     return chunk;
 }

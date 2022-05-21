@@ -57,7 +57,7 @@ int main(int argc, char *argv[])
     (ihdr_in).height = ntohl(readed_file[5]);
     printf("%s: %d x %d\n", argv[1], get_png_height(ihdr_in), get_png_width(ihdr_in));
     // printf("%0x\n", ntohl(readed_file[22]));
-    // printf("%0x\n", (ntohl(readed_file[22])>>24));
+    // printf("%0x\n", ((ntohl(readed_file[22])>>24)));
     ///////////////////////////////////////
 
     get_chunk(readed_file, chunk_type = "iend");
