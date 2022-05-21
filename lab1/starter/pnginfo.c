@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
     }
     fread(readed_file, sizeof(readed_file), 100, files);
 
-    for(k=0; k<8; k++){
+    for(k=0; k<24; k++){
         printf("%0x\n", ntohl(readed_file[k]));
         // readed_file[k] = ntohl(readed_file[k]);
     }
@@ -56,11 +56,11 @@ int main(int argc, char *argv[])
     (ihdr_in).width = ntohl(readed_file[4]);
     (ihdr_in).height = ntohl(readed_file[5]);
     printf("%s: %d x %d\n", argv[1], get_png_height(ihdr_in), get_png_width(ihdr_in));
-    // printf("%s\n", ntohl(readed_file[98]));
-    // printf("%d\n", (ntohl(readed_file[21])<<16)>>16);
+    // printf("%0x\n", ntohl(readed_file[22]));
+    // printf("%0x\n", (ntohl(readed_file[22])>>24));
     ///////////////////////////////////////
 
-    get_chunk(readed_file, chunk_type = "ihdr");
+    get_chunk(readed_file, chunk_type = "iend");
 
     return 0;
 }

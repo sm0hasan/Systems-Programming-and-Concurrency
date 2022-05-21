@@ -11,6 +11,7 @@
  * INCLUDE HEADER FILES
  *****************************************************************************/
 #include <stdio.h>
+#include <string.h>
 
 /******************************************************************************
  * DEFINED MACROS 
@@ -84,12 +85,15 @@ chunk_p get_chunk(U32 readed_files[], char chunk_type){
     int back_num = 0;
     int num_ihdr = 17490;
     int num_idat = 17473;
-    int num_iend = 17442;
+    int num_iend = 17742;
     int if_iend = 0;
     int i = 0;
     int tracker = 0;
-    U32 data_chunk[100];
+    U32 data_chunk[24] = {0};
+    char temp[2];
     chunk_p chunk;
+    size_t a;
+    size_t b;
     /////////////////////////
     if(chunk_type == ihdr){
         front_num = num_ihdr;
@@ -98,28 +102,42 @@ chunk_p get_chunk(U32 readed_files[], char chunk_type){
         front_num = num_idat;
         back_num = num_iend;
     }else if(chunk_type == iend){
-        front_num = num_iend;
-        if_iend = 1;
-    }
-    ///////////Automated code for extracting chunk//////////////
-    int index = 0;
-    for(readed_files[i+1] != NULL; i<sizeof(readed_files); i++){
-        if(tracker == 1){
-            data_chunk[index] = readed_files[i];
-            ++index;
-        }
-        if((ntohl(readed_files[i])<<16)>>16 == front_num){
-            tracker = 1;
-        }
-        if(if_iend == 0){
-            if((ntohl(readed_files[i])<<16)>>16 == back_num){
-                tracker = 0;
-                break;
+        int index = 0;
+        for(i; i<100 && readed_files[i+1]!=NULL; i++){
+            if(tracker == 1){
+                data_chunk[0] = ntohl(readed_files[i]);
+                data_chunk[1] = ntohl(readed_files[i+1]);
+                temp[0] = (data_chunk[0]<<8)>>8;
+                temp[1] = data_chunk[1]>>24;
+                data_chunk[0] = strcat(temp[0], temp[1]);
+            }
+            if((ntohl(readed_files[i])<<16)>>16 == front_num){
+                tracker = 1;
             }
         }
     }
-    for(i=0; i<sizeof(data_chunk);i++){
-        printf("%0x\n", ntohl(data_chunk[i]));
+    ///////////Automated code for extracting chunk//////////////
+    if(chunk_type != iend){
+        int index = 0;
+        for(i; i<100 && readed_files[i+1]!=NULL; i++){
+            if(if_iend == 0){
+                if((ntohl(readed_files[i])<<16)>>16 == back_num){
+                    tracker = 0;
+                    break;
+                }
+            }
+            if(tracker == 1){
+                data_chunk[index] = readed_files[i];
+                ++index;
+            }
+            if((ntohl(readed_files[i])<<16)>>16 == front_num){
+                tracker = 1;
+            }
+
+        }
+        for(i=0; i<20;i++){
+            printf("%0x\n", ntohl(data_chunk[i]));
+        }
     }
     ////////////////////////////////////////////////////////////
 
