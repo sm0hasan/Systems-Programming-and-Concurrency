@@ -86,16 +86,19 @@ chunk_p get_chunk(U32 readed_files[], char chunk_type){
     int num_ihdr = 17490;
     int num_idat = 17473;
     int num_iend = 17742;
+    int num_iend_1 = 20036;
     int if_iend = 0;
     int i = 0;
     int tracker = 0;
     U32 chunk_type_hex;
-    U32 data_chunk[24] = {0};
+    U32 data_chunk[30] = {0};
     U32 small_chunk[100] = {0};
+    U32 normal_chunk[30] = {0};
     char temp[2];
     chunk_p chunk;
     size_t a;
     size_t b;
+    int iend_mode;
     /////////////////////////
     if(chunk_type == ihdr){
         front_num = num_ihdr;
@@ -106,35 +109,44 @@ chunk_p get_chunk(U32 readed_files[], char chunk_type){
         back_num = num_iend;
         chunk_type_hex = 1229209940;
     }else if(chunk_type == iend){
-        int index = 0;
+        int index = 1;
         chunk_type_hex = 1229278788;
         for(i; i<100 && readed_files[i+1]!=NULL; i++){
             if(tracker == 1){
-                data_chunk[1] = ntohl(readed_files[i]);
-                data_chunk[1] = ((data_chunk[0]<<8)>>8)*256;
-                // printf("%0x\n", data_chunk[0]);
-                data_chunk[2] = ntohl(readed_files[i+1]);
-                data_chunk[2] = (data_chunk[1]>>24);
-                // printf("%0x\n", data_chunk[1]);
-                data_chunk[1] = ntohl(data_chunk[0] + data_chunk[1]);
                 data_chunk[0] = ntohl(chunk_type_hex);
-                data_chunk[2] = 0;
-                break;
+                data_chunk[index] = ntohl(readed_files[i]);
+                ++index;
             }
             if((ntohl(readed_files[i])<<16)>>16 == num_iend){
                 tracker = 1;
+                iend_mode = 0;
+            }else if((ntohl(readed_files[i])<<16)>>16 == num_iend_1){
+                tracker = 1;
+                iend_mode = 1;
             }
         }
-
+        data_chunk[3] = 16777215;
+        normal_chunk[0] = ntohl(data_chunk[0]);
+        normal_chunk[1] = ntohl(data_chunk[1]);
+        normal_chunk[2] = ntohl(data_chunk[2]);
+        normal_chunk[3] = data_chunk[3];
     }
     ///////////Automated code for extracting chunk//////////////
     if(chunk_type != iend){
-        int index = 0;
-        for(i; i<100 && readed_files[i+1]!=NULL; i++){
-            if(if_iend == 0){
-                if((ntohl(readed_files[i])<<16)>>16 == back_num){
+        int index = 1;
+        for(i; i<100 && readed_files[i]!=NULL; i++){
+            if(chunk_type == ihdr){
+                if((ntohl(readed_files[i-1])<<16)>>16 == back_num){
                     tracker = 0;
-                    data_chunk[index] = ntohl(chunk_type_hex);
+                    data_chunk[0] = ntohl(chunk_type_hex);
+                    data_chunk[index] = 16777215;
+                    break;
+                }
+            }else{
+                if(((ntohl(readed_files[i])<<16)>>16 == back_num) || ((ntohl(readed_files[i+1])<<16)>>16 == num_iend_1)){
+                    tracker = 0;
+                    data_chunk[0] = ntohl(chunk_type_hex);
+                    data_chunk[index] = 16777215;
                     break;
                 }
             }
@@ -151,23 +163,115 @@ chunk_p get_chunk(U32 readed_files[], char chunk_type){
     }
     ////////////////////////////////////////////////////////////
     int small_index = 0;
-    for(i=0; i<20;i++){
-        small_chunk[small_index] = ntohl(data_chunk[0])>>24;
-        small_chunk[small_index+1] = (ntohl(data_chunk[0])>>16)-small_chunk[small_index];
-        small_chunk[small_index+2] = ((ntohl(data_chunk[0]<<16))>>24);
-        small_chunk[small_index+3] = ((ntohl(data_chunk[0]<<24))>>24);
-        small_index += 4;
-    }
-    for(i=0; i<100; i++){
-        printf("%x\n", small_chunk[i]);
-    }
-    chunk.p_data = data_chunk;
-    for(i=0; i<20;i++){
-        if(data_chunk[i+1] == 0){
-            chunk.length = 4*(i);
-            chunk.crc = data_chunk[i-1];
+    // for(i=0; i<30; i++){
+    //     printf("%x\n", ntohl(data_chunk[i]));
+    // }
+
+    //////////////get crc for idat//////////////
+    if(chunk_type == idat){
+        chunk.p_data = &data_chunk;
+        U8 *temp_idat = &data_chunk;
+        tracker = 0;
+        small_index = 0;
+        for(i=0; i<90; i++){//i for this loop *=4i (size of data_chunk)
+
+            if((chunk.p_data[i+1]==0xff) && (chunk.p_data[i+2]==0xff) && (chunk.p_data[i+3]==0xff)){
+                small_chunk[small_index] = 0xffffff;
+                tracker = 0;
+                // printf("tracker == 2\n");
+                break;
+            }
+            if(tracker == 1){
+                if(i<=4){
+                    small_chunk[small_index] = chunk.p_data[i-1];
+                    ++small_index;
+                }else{
+                    small_chunk[small_index] = chunk.p_data[i];
+                    ++small_index;
+                }
+                
+            }
+            
+            if((chunk.p_data[i]==73) && (chunk.p_data[i+1]==68) && (chunk.p_data[i+2]==65) && (chunk.p_data[i+3]==84)){
+                tracker = 1;
+                
+            }
         }
-        // printf("%0x\n", ntohl(data_chunk[i]));
+        // small_chunk[small_index] = 99999999;
+        // printf("Small index: %x\n", small_chunk[small_index]);
+        U32 crc;
+        for(i=0; i<90; i++){
+            if(small_chunk[i] == 0xffffff){
+                crc = (small_chunk[i-6]<<24) + (small_chunk[i-5]<<16) + (small_chunk[i-4]<<8) + (small_chunk[i-3]);
+                // printf("crc: %x\n", crc);
+                chunk.length = i-6;
+                break;
+            }
+            // printf("%x\n", small_chunk[i]);
+        }
+        small_index = 0;
+        for(i=0;i<30;i++){
+            data_chunk[i] = htonl((small_chunk[small_index]<<24) + (small_chunk[small_index+1]<<16) + (small_chunk[small_index+2]<<8) + (small_chunk[small_index+3]));
+            small_index+=4;
+            // printf("%x\n", data_chunk[i]);
+        }
+        chunk.p_data = &data_chunk;
+        chunk.crc = crc;
+    }
+    ////////////////////get crc for ihdr/////////////////////
+    if(chunk_type == ihdr){
+        U32 temp_chunk[2];
+        for(i=0; i<30; i++){
+            ///////get crc/////////
+            if(chunk_type == ihdr){
+                if(data_chunk[i+3] == 16777215){
+                    temp_chunk[0] = ntohl(data_chunk[i]);
+                    temp_chunk[1] = ntohl(data_chunk[i+1]);
+                    temp_chunk[0] = (temp_chunk[0]<<8) + (temp_chunk[1]>>24);
+                    // printf("crc: %x\n", temp_chunk[0]);
+                    break;
+                }
+            }
+        }
+        chunk.p_data = &data_chunk;
+        chunk.crc = temp_chunk[0];
+        chunk.length = 17;
+        
+    }
+    /////////////////////////////////////////////////////////
+    if(chunk_type == iend){
+        small_index = 0;
+        U32 crc_iend;
+        chunk.p_data = &normal_chunk;
+        for(i=0;i<30;i++){
+            if(iend_mode == 0){
+                if((chunk.p_data[i] == 255)){
+                    small_chunk[small_index] = chunk.p_data[i-7];
+                    small_chunk[small_index+1] = chunk.p_data[i-6];
+                    small_chunk[small_index+2] = chunk.p_data[i-5];
+                    small_chunk[small_index+3] = chunk.p_data[i-4];
+                    crc_iend = htonl((small_chunk[0]<<24) + (small_chunk[1]<<16) + (small_chunk[2]<<8) + (small_chunk[3]));
+                    // printf("crc_iend: %x\n", ntohl(crc_iend));
+                    break;
+                }
+            }else if(iend_mode == 1){
+                if((chunk.p_data[i] == 255)){
+                    small_chunk[small_index] = chunk.p_data[i-6];
+                    small_chunk[small_index+1] = chunk.p_data[i-5];
+                    small_chunk[small_index+2] = chunk.p_data[i-4];
+                    small_chunk[small_index+3] = chunk.p_data[i-3];
+                    crc_iend = htonl((small_chunk[0]<<24) + (small_chunk[1]<<16) + (small_chunk[2]<<8) + (small_chunk[3]));
+                    // printf("crc_iend: %x\n", ntohl(crc_iend));
+                    break;
+                }
+            }
+            // printf("%x\n", data_chunk[i]);
+        }
+        chunk.p_data = &data_chunk;
+        chunk.crc = ntohl(crc_iend);
+        chunk.length = 4;
+        // U32 iend_type;
+        // iend_type = htonl(0x49454e44);
     }
 
     return chunk;
