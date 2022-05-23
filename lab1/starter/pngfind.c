@@ -47,9 +47,10 @@ int f_name(char *path) {
         strcpy(concat, str_path);
         
         //printf(concat);
-        char type = f_type(str_path);
+        char type = f_type(*str_path);
         //printf(concat);
-        printf(type);
+        //printf(type);
+        printf("%s\n", type);
         if (type == "directory") {
             strcat(path, slash);
             strcat(path, str_path);
@@ -85,32 +86,30 @@ char f_type(char *file_path) {
     int i;
     char *ptr;
     char *res;
-    //ptr = file_path;
+    res = file_path;
     
     struct stat buf;
 
-        
         if (lstat(file_path, &buf) < 0) {
             perror("lstat error");
         }   
-        
 
-        if      (S_ISREG(buf.st_mode))  return "regular";
-        else if (S_ISDIR(buf.st_mode))  return "directory";
-        else if (S_ISCHR(buf.st_mode))  return "character special";
-        else if (S_ISBLK(buf.st_mode))  return "block special";
-        else if (S_ISFIFO(buf.st_mode)) return "fifo";
+        if      (S_ISREG(buf.st_mode))  ptr = "regular";
+        else if (S_ISDIR(buf.st_mode))  ptr = "directory";
+        else if (S_ISCHR(buf.st_mode))  ptr = "character special";
+        else if (S_ISBLK(buf.st_mode))  ptr = "block special";
+        else if (S_ISFIFO(buf.st_mode)) ptr = "fifo";
 #ifdef S_ISLNK
-        else if (S_ISLNK(buf.st_mode))  return "symbolic link";
+        else if (S_ISLNK(buf.st_mode))  ptr = "symbolic link";
 #endif
 #ifdef S_ISSOCK
-        else if (S_ISSOCK(buf.st_mode)) return "socket";
+        else if (S_ISSOCK(buf.st_mode)) ptr = "socket";
 #endif
-        else                            return "**unknown mode**";
-    // printf("%s\n", ptr);
-    // char type;
-    // type = ptr;
-    // return type;
+        else                            ptr = "**unknown mode**";
+    printf("%s\n", ptr);
+    char type;
+    type = ptr;
+    return type;
 }
 
 int main(int argc, char *argv[]) {
