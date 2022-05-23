@@ -81,7 +81,7 @@ int main(int argc, char *argv[])
     //         }
     //     }
         
-    chunk = extract_actual_chunk(readed_file, chunk_type = "ihdr");
+    chunk = extract_actual_chunk(readed_file, chunk_type = "idat");
     //     printf("%d\n%d\n", chunk.p_data[n], temp_chunk[n]);
     // }
     // crc_calculated = crc(chunk.p_data, chunk.length);

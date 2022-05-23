@@ -359,15 +359,13 @@ chunk_p extract_actual_chunk(U32 readed_files[], char chunk_type){
                     break;
                 }
             }else{
-                if(((ntohl(readed_files[i])<<16)>>16 == back_num) || ((ntohl(readed_files[i+1])<<16)>>16 == num_iend_1)){
+                if(((ntohl(readed_files[i-2])<<16)>>16 == back_num) || ((ntohl(readed_files[i-1])<<16)>>16 == num_iend_1)){
                     tracker = 0;
-                    data_chunk[0] = ntohl(chunk_type_hex);
-                    data_chunk[index] = 16777215;
                     break;
                 }
             }
             if(tracker == 1){
-                data_chunk[index] = ntohl(readed_files[i]);
+                data_chunk[index] = readed_files[i];
                 ++index;
             }
             if((ntohl(readed_files[i+2])<<16)>>16 == front_num){
@@ -379,60 +377,51 @@ chunk_p extract_actual_chunk(U32 readed_files[], char chunk_type){
     }
     ////////////////////////////////////////////////////////////
     int small_index = 0;
-    for(i=0; i<30; i++){
-        printf("%x\n", data_chunk[i]);
-    }
+    // for(i=0; i<30; i++){
+    //     printf("%x\n", data_chunk[i]);
+    // }
 
     //////////////get crc for idat//////////////
     if(chunk_type == idat){
         chunk.p_data = &data_chunk;
-        U8 *temp_idat = &data_chunk;
         tracker = 0;
         small_index = 0;
         for(i=0; i<90; i++){//i for this loop *=4i (size of data_chunk)
 
-            if((chunk.p_data[i+1]==0xff) && (chunk.p_data[i+2]==0xff) && (chunk.p_data[i+3]==0xff)){
+            if((chunk.p_data[i+8]==73) && (chunk.p_data[i+9]==69) && (chunk.p_data[i+10]==78) && (chunk.p_data[i+11]==68)){
                 small_chunk[small_index] = 0xffffff;
                 tracker = 0;
-                // printf("tracker == 2\n");
+                
                 break;
             }
             if(tracker == 1){
-                if(i<=4){
-                    small_chunk[small_index] = chunk.p_data[i-1];
-                    ++small_index;
-                }else{
-                    small_chunk[small_index] = chunk.p_data[i];
-                    ++small_index;
-                }
-                
+                // printf("tracker == 2\n");
+                small_chunk[small_index] = chunk.p_data[i];
+                ++small_index;
             }
             
             if((chunk.p_data[i]==73) && (chunk.p_data[i+1]==68) && (chunk.p_data[i+2]==65) && (chunk.p_data[i+3]==84)){
+                // printf("tracker == 2\n");
+                // small_chunk[small_index] = chunk.p_data[i-4];
+                // small_chunk[1] = chunk.p_data[i-3];
+                // small_chunk[2] = chunk.p_data[i-2];
+                // small_chunk[3] = chunk.p_data[i-1];
+                // small_chunk[4] = chunk.p_data[i];
+                // small_chunk[5] = chunk.p_data[i+1];
+                // small_chunk[6] = chunk.p_data[i+2];
+                // small_chunk[7] = chunk.p_data[i+3];
+                // small_index = 8;
+                chunk.length = (chunk.p_data[i-4]<<24) + (chunk.p_data[i-3]<<16) + (chunk.p_data[i-2]<<8) + (chunk.p_data[i-1]);
+                printf("Chunk.length: %x\n", chunk.length);
+                i = i+7;
                 tracker = 1;
                 
             }
         }
-        // small_chunk[small_index] = 99999999;
-        // printf("Small index: %x\n", small_chunk[small_index]);
-        U32 crc;
-        for(i=0; i<90; i++){
-            if(small_chunk[i] == 0xffffff){
-                crc = (small_chunk[i-6]<<24) + (small_chunk[i-5]<<16) + (small_chunk[i-4]<<8) + (small_chunk[i-3]);
-                // printf("crc: %x\n", crc);
-                chunk.length = i-6;
-                break;
-            }
-            // printf("%x\n", small_chunk[i]);
+        for(i=0;i<100;i++){
+            printf("small: %x\n", small_chunk[i]);
         }
-        small_index = 0;
-        for(i=0;i<30;i++){
-            data_chunk[i] = htonl((small_chunk[small_index]<<24) + (small_chunk[small_index+1]<<16) + (small_chunk[small_index+2]<<8) + (small_chunk[small_index+3]));
-            small_index+=4;
-            // printf("%x\n", data_chunk[i]);
-        }
-        chunk.p_data = &data_chunk;
-        chunk.crc = crc;
+        chunk.actual_data = &small_chunk;
     }
     ////////////////////get crc for ihdr/////////////////////
     if(chunk_type == ihdr){
