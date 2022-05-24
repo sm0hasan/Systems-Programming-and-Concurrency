@@ -28,9 +28,10 @@
  *****************************************************************************/
 typedef unsigned char U8;
 typedef unsigned int  U32;
+typedef unsigned long int U64;
 
 typedef struct chunk {
-    U32 length;  /* length of data in the chunk, host byte order */
+    U64 length;  /* length of data in the chunk, host byte order */
     U8  type[4]; /* chunk type */
     U8  *p_data; /* pointer to location where the actual data are */
     U8 *actual_data[4000];
@@ -401,21 +402,22 @@ chunk_p extract_actual_chunk(U32 readed_files[], char chunk_type){
                 // small_index = 8;
                 chunk.length = (chunk.p_data[i-4]<<24) + (chunk.p_data[i-3]<<16) + (chunk.p_data[i-2]<<8) + (chunk.p_data[i-1]);
                 printf("Chunk.length: %x\n", chunk.length);
-                i = i+8;
+                i = i+4;
                 tracker = i;
                 break;
                 
             }
         }
-        for(i=tracker;i<chunk.length+9;++i){
-            small_chunk[small_index] = chunk.p_data[i];
+        for(i=tracker;i<(chunk.length+9);++i){
+            chunk.p_data[small_index] = chunk.p_data[i];
+            // printf("idat: %x\n", chunk.p_data[i]);
             ++small_index;
         }
-        U8 tiny_chunk[4000];
-        for(i=0;i<4000;i++){
-            chunk.actual_data[i] = small_chunk[i];
-            // printf("small: %x\n", small_chunk[i]);
-        }
+        // U8 tiny_chunk[4000];
+        // for(i=0;i<4000;i++){
+        //     chunk.actual_data[i] = small_chunk[i];
+        //     // printf("small: %x\n", small_chunk[i]);
+        // }
     }
     ////////////////////get crc for ihdr/////////////////////
     if(chunk_type == ihdr){

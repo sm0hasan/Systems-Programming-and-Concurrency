@@ -22,24 +22,63 @@ int main(int argc, char *argv[])
     int width;
     int height;
     U32 readed_file[1000];
-    U8 readed_file_e[200];
     char chunk_type;
     // int tracker = 0;
-    FILE *files;
+    // FILE *files;
     int *png_bytes = -1991225785;
     struct data_IHDR ihdr_in;
     struct chunk chunk;
     U32 crc_calculated;
+    
+    U8 dest_total[2000000]; 
+    U64 dest_len;
+    U64 idat_len;
+    U32 index_flag = 0;
     ///////////////////////////////
 
     ///////file operations//////////////
-    files = fopen(argv[1], "rb");
-    if(files == NULL){
-        printf("failed to open file");
-        return 3;
+    for(k=1;k<argc;++k){
+        U8 dest[2000000];   
+        int i = 0;
+        FILE *files;
+        files = fopen(argv[k], "rb");
+        if(files == NULL){
+            printf("failed to open file");
+            return 3;
+        }
+        fread(readed_file, sizeof(U32), 1000, files);
+        /////////Print width and height///////////
+        (ihdr_in).width = ntohl(readed_file[4]);
+        (ihdr_in).height = ntohl(readed_file[5]);
+        printf("%s: %d x %d\n", argv[k], get_png_height(ihdr_in), get_png_width(ihdr_in));
+        // printf("%0x\n", ntohl(readed_file[7]));
+        // printf("%x\n", ((ntohl(readed_file[7])<<8)));
+        ///////////////////////////////////////
+        chunk = extract_actual_chunk(readed_file, chunk_type = "idat");
+        // for(i=0; i<chunk.length; ++i){
+        //     printf("idat: %x\n", chunk.actual_data[i]);
+        // }
+        
+        i = mem_inf(&dest, &dest_len, chunk.p_data, chunk.length);
+        printf("length: %d\n", dest_len);
+        zerr(i);
+        if(i!=0){
+            printf("Cat failed %s\n", argv[k]);
+            zerr(i);
+            break;
+        }
+        index_flag += dest_len;
+        dest_len = 0;
+        if(k!=0){
+            int p = 0;
+            for(i=index_flag; i<(dest_len+index_flag); ++i){
+                dest_total[i] = dest[k];
+                ++p;
+            }
+        }
+        
+        
     }
-    fread(readed_file, sizeof(U32), 1000, files);
-    fread(readed_file_e, sizeof(U8), 200, files);
 
  
 
@@ -52,29 +91,23 @@ int main(int argc, char *argv[])
     ////////////////////////////////////
 
     ////////////Check if png///////////////
-    int i = ntohl(readed_file[0]);
-    // printf("%d\n", i);
-    if(i == png_bytes){
-        printf("%s: It is a PNG file\n", argv[1]);
-    }else{
-        printf("%s: Not a PNG file", argv[1]);
-        return 0;
-    }
+    // int i = ntohl(readed_file[0]);
+    // // printf("%d\n", i);
+    // if(i == png_bytes){
+    //     printf("%s: It is a PNG file\n", argv[1]);
+    // }else{
+    //     printf("%s: Not a PNG file", argv[1]);
+    //     return 0;
+    // }
     ///////////////////////////////
 
-    /////////Print width and height///////////
-    (ihdr_in).width = ntohl(readed_file[4]);
-    (ihdr_in).height = ntohl(readed_file[5]);
-    printf("%s: %d x %d\n", argv[1], get_png_height(ihdr_in), get_png_width(ihdr_in));
-    // printf("%0x\n", ntohl(readed_file[7]));
-    // printf("%x\n", ((ntohl(readed_file[7])<<8)));
-    ///////////////////////////////////////
+
 
     // chunk = get_chunk(readed_file, chunk_type = "ihdr");
     // chunk = get_chunk(readed_file, chunk_type = "ihdr");
-    int n = 0;
-    // printf("%d\n", chunk.length);
-    U32 temp_chunk[24]={0};
+    // int n = 0;
+    // // printf("%d\n", chunk.length);
+    // U32 temp_chunk[24]={0};
     // for(n;n<chunk.length;++n){
     //     if(n==0){
     //         if((chunk.p_data[n]==73) && (chunk.p_data[n+1]==72) && (chunk.p_data[n+2]==68) && (chunk.p_data[n+3]==82)){
@@ -82,19 +115,9 @@ int main(int argc, char *argv[])
     //         }
     //     }
 
-    U8 dest[2000000];    
-    U64 dest_len;
-    U64 idat_len;
-    idat_len = 3836;
+
     
-    chunk = extract_actual_chunk(readed_file, chunk_type = "idat");
-    for(i=0; i<chunk.length; ++i){
-        printf("idat: %x\n", chunk.actual_data[i]);
-    }
-    printf("length: %d\n", idat_len);
-    i = mem_inf(dest, dest_len, chunk.actual_data, idat_len);
-    printf("dest_len: %d\n", i);
-    zerr(i);
+    
 
     // for(i=0; i<200; ++i){
     //     printf("inf: %x\n", dest[i]);

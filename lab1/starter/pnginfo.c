@@ -71,9 +71,9 @@ int main(int argc, char *argv[])
 
     // chunk = get_chunk(readed_file, chunk_type = "ihdr");
     // chunk = get_chunk(readed_file, chunk_type = "ihdr");
-    int n = 0;
-    // printf("%d\n", chunk.length);
-    U32 temp_chunk[24]={0};
+    // int n = 0;
+    // // printf("%d\n", chunk.length);
+    // U32 temp_chunk[24]={0};
     // for(n;n<chunk.length;++n){
     //     if(n==0){
     //         if((chunk.p_data[n]==73) && (chunk.p_data[n+1]==72) && (chunk.p_data[n+2]==68) && (chunk.p_data[n+3]==82)){
@@ -81,32 +81,32 @@ int main(int argc, char *argv[])
     //         }
     //     }
         
-    chunk = extract_actual_chunk(readed_file, chunk_type = "idat");
+    // chunk = extract_actual_chunk(readed_file, chunk_type = "idat");
     //     printf("%d\n%d\n", chunk.p_data[n], temp_chunk[n]);
     // }
     // crc_calculated = crc(chunk.p_data, chunk.length);
     // printf("crc calculated: %x\n", crc_calculated);
 
     //////////////tobe commented out///////////////////////////
-    // struct chunk chunk_ihdr = get_chunk(readed_file, chunk_type = "ihdr");
-    // U32 crc_ihdr = crc(chunk_ihdr.p_data, chunk_ihdr.length);
-    // struct chunk chunk_idat = get_chunk(readed_file, chunk_type = "idat");
-    // U32 crc_idat = crc(chunk_idat.p_data, chunk_idat.length);
-    // struct chunk chunk_iend = get_chunk(readed_file, chunk_type = "iend");
-    // U32 crc_iend = crc(chunk_iend.p_data, chunk_iend.length);
+    struct chunk chunk_ihdr = get_chunk(readed_file, chunk_type = "ihdr");
+    U32 crc_ihdr = crc(chunk_ihdr.p_data, chunk_ihdr.length);
+    struct chunk chunk_idat = get_chunk(readed_file, chunk_type = "idat");
+    U32 crc_idat = crc(chunk_idat.p_data, chunk_idat.length);
+    struct chunk chunk_iend = get_chunk(readed_file, chunk_type = "iend");
+    U32 crc_iend = crc(chunk_iend.p_data, chunk_iend.length);
     //////////////////////////////////////////////////////////
 
 
 
-    // if(crc_ihdr != chunk_ihdr.crc){
-    //     printf("IHDR chunk CRC error: computed %x, expected %x\n", crc_ihdr, chunk_ihdr.crc);
-    // }
-    // if(crc_idat != chunk_idat.crc){
-    //     printf("IDAT chunk CRC error: computed %x, expected %x\n", crc_idat, chunk_idat.crc);
-    // }
-    // if(crc_iend != chunk_iend.crc){
-    //     printf("IEND chunk CRC error: computed %x, expected %x\n", crc_iend, chunk_iend.crc);
-    // }
+    if(crc_ihdr != chunk_ihdr.crc){
+        printf("IHDR chunk CRC error: computed %x, expected %x\n", crc_ihdr, chunk_ihdr.crc);
+    }
+    if(crc_idat != chunk_idat.crc){
+        printf("IDAT chunk CRC error: computed %x, expected %x\n", crc_idat, chunk_idat.crc);
+    }
+    if(crc_iend != chunk_iend.crc){
+        printf("IEND chunk CRC error: computed %x, expected %x\n", crc_iend, chunk_iend.crc);
+    }
 
 
     return 0;
