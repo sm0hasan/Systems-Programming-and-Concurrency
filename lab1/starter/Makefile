@@ -9,11 +9,11 @@ LDFLAGS = -g   # debugging symbols in build
 LDLIBS = -lz   # link with libz
 
 # For students 
-LIB_UTIL = png_util/crc.o
-SRCS   = pnginfo.c
-OBJS   = pnginfo.o $(LIB_UTIL)
+LIB_UTIL = png_util/zutil.o png_util/lab_png.h
+SRCS   = catpng.c
+OBJS   = catpng.o $(LIB_UTIL)
 
-TARGETS= pnginfo.out pngfind.out
+TARGETS = catpng.out
 
 all: ${TARGETS}
 
@@ -40,6 +40,17 @@ pnginfo.out: $(OBJS)
 -include $(SRCS:.c=.d)
 
 pngfind.out: $(OBJS) 
+	$(LD) -o $@ $^ $(LDLIBS) $(LDFLAGS) 
+
+%.o: %.c 
+	$(CC) $(CFLAGS) -c $< 
+
+%.d: %.c
+	gcc -MM -MF $@ $<
+
+-include $(SRCS:.c=.d)
+
+catpng.out: $(OBJS) 
 	$(LD) -o $@ $^ $(LDLIBS) $(LDFLAGS) 
 
 %.o: %.c 

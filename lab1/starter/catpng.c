@@ -21,7 +21,7 @@ int main(int argc, char *argv[])
     int k;
     int width;
     int height;
-    U32 readed_file[100];
+    U32 readed_file[1000];
     U8 readed_file_e[200];
     char chunk_type;
     // int tracker = 0;
@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
         printf("failed to open file");
         return 3;
     }
-    fread(readed_file, sizeof(U32), 100, files);
+    fread(readed_file, sizeof(U32), 1000, files);
     fread(readed_file_e, sizeof(U8), 200, files);
 
  
@@ -81,8 +81,24 @@ int main(int argc, char *argv[])
     //             temp_chunk[n] = chunk.p_data[n];
     //         }
     //     }
-        
+
+    U8 dest[2000000];    
+    U64 dest_len;
+    U64 idat_len;
+    idat_len = 3836;
+    
     chunk = extract_actual_chunk(readed_file, chunk_type = "idat");
+    for(i=0; i<chunk.length; ++i){
+        printf("idat: %x\n", chunk.actual_data[i]);
+    }
+    printf("length: %d\n", idat_len);
+    i = mem_inf(dest, dest_len, chunk.actual_data, idat_len);
+    printf("dest_len: %d\n", i);
+    zerr(i);
+
+    // for(i=0; i<200; ++i){
+    //     printf("inf: %x\n", dest[i]);
+    // }
 
 
     return 0;

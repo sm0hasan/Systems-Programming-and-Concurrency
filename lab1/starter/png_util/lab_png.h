@@ -33,7 +33,7 @@ typedef struct chunk {
     U32 length;  /* length of data in the chunk, host byte order */
     U8  type[4]; /* chunk type */
     U8  *p_data; /* pointer to location where the actual data are */
-    U8 *actual_data;
+    U8 *actual_data[4000];
     U32 crc;     /* CRC field  */
 } chunk_p;
 
@@ -306,9 +306,9 @@ chunk_p extract_actual_chunk(U32 readed_files[], char chunk_type){
     int i = 0;
     int tracker = 0;
     U32 chunk_type_hex;
-    U32 data_chunk[30] = {0};
+    U32 data_chunk[1000] = {0};
     U32 actual_chunk[30] = {0};
-    U32 small_chunk[100] = {0};
+    U32 small_chunk[4000] = {0};
     U32 normal_chunk[30] = {0};
     char temp[2];
     chunk_p chunk;
@@ -350,7 +350,7 @@ chunk_p extract_actual_chunk(U32 readed_files[], char chunk_type){
     ///////////Automated code for extracting chunk//////////////
     if(chunk_type != iend){
         int index = 0;
-        for(i; i<100 && readed_files[i]!=NULL; i++){
+        for(i; i<1000 && readed_files[i]!=NULL; i++){
             if(chunk_type == ihdr){
                 if((ntohl(readed_files[i-1])<<16)>>16 == back_num){
                     tracker = 0;
@@ -377,28 +377,16 @@ chunk_p extract_actual_chunk(U32 readed_files[], char chunk_type){
     }
     ////////////////////////////////////////////////////////////
     int small_index = 0;
-    // for(i=0; i<30; i++){
-    //     printf("%x\n", data_chunk[i]);
-    // }
+    for(i=0; i<1000; i++){
+        printf("%x\n", data_chunk[i]);
+    }
 
     //////////////get crc for idat//////////////
     if(chunk_type == idat){
         chunk.p_data = &data_chunk;
         tracker = 0;
         small_index = 0;
-        for(i=0; i<90; i++){//i for this loop *=4i (size of data_chunk)
-
-            if((chunk.p_data[i+8]==73) && (chunk.p_data[i+9]==69) && (chunk.p_data[i+10]==78) && (chunk.p_data[i+11]==68)){
-                small_chunk[small_index] = 0xffffff;
-                tracker = 0;
-                
-                break;
-            }
-            if(tracker == 1){
-                // printf("tracker == 2\n");
-                small_chunk[small_index] = chunk.p_data[i];
-                ++small_index;
-            }
+        for(i=0; i<4000; i++){//i for this loop *=4i (size of data_chunk)
             
             if((chunk.p_data[i]==73) && (chunk.p_data[i+1]==68) && (chunk.p_data[i+2]==65) && (chunk.p_data[i+3]==84)){
                 // printf("tracker == 2\n");
@@ -413,15 +401,21 @@ chunk_p extract_actual_chunk(U32 readed_files[], char chunk_type){
                 // small_index = 8;
                 chunk.length = (chunk.p_data[i-4]<<24) + (chunk.p_data[i-3]<<16) + (chunk.p_data[i-2]<<8) + (chunk.p_data[i-1]);
                 printf("Chunk.length: %x\n", chunk.length);
-                i = i+7;
-                tracker = 1;
+                i = i+8;
+                tracker = i;
+                break;
                 
             }
         }
-        for(i=0;i<100;i++){
-            printf("small: %x\n", small_chunk[i]);
+        for(i=tracker;i<chunk.length+9;++i){
+            small_chunk[small_index] = chunk.p_data[i];
+            ++small_index;
         }
-        chunk.actual_data = &small_chunk;
+        U8 tiny_chunk[4000];
+        for(i=0;i<4000;i++){
+            chunk.actual_data[i] = small_chunk[i];
+            // printf("small: %x\n", small_chunk[i]);
+        }
     }
     ////////////////////get crc for ihdr/////////////////////
     if(chunk_type == ihdr){
@@ -487,3 +481,4 @@ chunk_p extract_actual_chunk(U32 readed_files[], char chunk_type){
 
     return chunk;
 }
+
