@@ -484,3 +484,101 @@ chunk_p extract_actual_chunk(U32 readed_files[], char chunk_type){
     return chunk;
 }
 
+
+simple_PNG_p get_image(U32 readed_files[]){
+    struct simple_PNG png;
+    chunk_p rt;
+    ///////Declaration///////
+    struct chunk ihdr;
+    struct chunk idat;
+    struct chunk iend;
+    U8 *chunk_ptr;
+    U8 *ntohl_ptr;
+    U8 *file_ptr;
+    U32 data_chunk[100000] = {0};
+    U32 ntohl_data_chunk[100000] = {0};
+    U8 chunk_ihdr[120];
+    U8 chunk_idat[90000];
+    U8 chunk_iend[80];
+    int i = 0;
+    int k = 0;
+    ////////////////////////
+    ////LINKs/////
+    png.p_IHDR = &ihdr;
+    png.p_IDAT = &idat;
+    png.p_IEND = &iend;
+    ihdr.p_data = &chunk_ihdr;
+    idat.p_data = &chunk_idat;
+    iend.p_data = &chunk_iend;
+    ///////Move over readed_files//////////
+    for(i=0;i<100000;++i){
+        if(readed_files[i] == NULL){
+            break;
+        }
+        data_chunk[i] = readed_files[i];
+        ntohl_data_chunk[i] = ntohl(readed_files[i]);
+        // printf("data_chunk[%d]: %x\n", i, ntohl(data_chunk[i]));
+    }
+    chunk_ptr = &data_chunk;
+    ntohl_ptr = &ntohl_data_chunk;
+    file_ptr = &readed_files;
+    /////////////////////////////////////
+    
+    //////////////Length Assignment/////////////////
+    ihdr.length = ntohl(data_chunk[2]);
+    // for(i=33;i<37;++i){
+    //     printf("ntohl_chunk[%d]: %x\n",i,chunk_ptr[i]);
+    // }
+    idat.length = (chunk_ptr[33]<<24) + (chunk_ptr[34]<<16) + (chunk_ptr[35]<<8) + (chunk_ptr[36]);
+    iend.length = 0;
+    // printf("length: %x\n", idat.length);
+    ///////////////////////////////////////////////
+
+    /////////////Data, CRC, and TYPE////////////////
+    /* IHDR */
+    k = 0;
+    for(i=12;i<16;++i){
+        ihdr.type[k] = chunk_ptr[i];
+        ++k;
+    }
+    k = 0;
+    for(i=16; i<29; ++i){ //ihdr data chunk
+        chunk_ihdr[k] = chunk_ptr[i];
+        // printf("ntohl_chunk[%d]: %x\n",k,png.p_IHDR->p_data[k]);
+        ++k;
+    }
+    ihdr.crc = (chunk_ptr[29]<<24) + (chunk_ptr[30]<<16) + (chunk_ptr[31]<<8) + (chunk_ptr[32]);
+    // printf("IHDR CRC: %x\n", png.p_IHDR->crc);
+    
+    /* IDAT */
+    k=0;
+    for(i=37;i<41;++i){//Idat type
+        idat.type[k] = chunk_ptr[i];
+        ++k;
+    }
+    k=0;
+    for(i=41;i<(41+(idat.length));++i){
+        chunk_idat[k] = chunk_ptr[i];
+        ++k;
+    }
+    i = 41+(idat.length);
+    idat.crc = (chunk_ptr[i]<<24) + (chunk_ptr[i+1]<<16) + (chunk_ptr[i+2]<<8) + (chunk_ptr[i+3]);
+    // printf("IDAT CRC: %x\n", png.p_IDAT->crc);
+
+    /* IEND */
+    long int m;
+    long int n;
+    m = i+8;
+    n = i+12;
+    int p = i+4;
+    k=0;
+    for(m;m<n;++m){
+        iend.type[k] = chunk_ptr[m];
+        // printf("ntohl_chunk[%d]: %x\n",k,png.p_IEND->type[k]);
+        ++k;
+    }
+    iend.crc = (chunk_ptr[n]<<24) + (chunk_ptr[n+1]<<16) + (chunk_ptr[n+2]<<8) + (chunk_ptr[n+3]);
+    // printf("IEND CRC: %x\n", png.p_IEND->crc);
+    return png;
+    
+}

@@ -20,8 +20,7 @@ int main(int argc, char *argv[])
     int k;
     int width;
     int height;
-    U32 readed_file[100];
-    U8 readed_file_e[200];
+    U32 readed_file[100000];
     char chunk_type;
     // int tracker = 0;
     FILE *files;
@@ -37,18 +36,7 @@ int main(int argc, char *argv[])
         printf("failed to open file");
         return 3;
     }
-    fread(readed_file, sizeof(U32), 100, files);
-    fread(readed_file_e, sizeof(U8), 200, files);
-
- 
-
-    // fread(readed_file_e, sizeof(readed_file_e), 200, files);
-
-    // for(k=0; k<10; k++){
-    //     printf("%x\n", readed_file_e[k]);
-    //     // readed_file[k] = ntohl(readed_file[k]);
-    // }
-    ////////////////////////////////////
+    fread(readed_file, sizeof(U32), 100000, files);
 
     ////////////Check if png///////////////
     int i = ntohl(readed_file[0]);
@@ -65,48 +53,60 @@ int main(int argc, char *argv[])
     (ihdr_in).width = ntohl(readed_file[4]);
     (ihdr_in).height = ntohl(readed_file[5]);
     printf("%s: %d x %d\n", argv[1], get_png_height(ihdr_in), get_png_width(ihdr_in));
-    // printf("%0x\n", ntohl(readed_file[7]));
-    // printf("%x\n", ((ntohl(readed_file[7])<<8)));
-    ///////////////////////////////////////
 
-    // chunk = get_chunk(readed_file, chunk_type = "ihdr");
-    // chunk = get_chunk(readed_file, chunk_type = "ihdr");
-    // int n = 0;
-    // // printf("%d\n", chunk.length);
-    // U32 temp_chunk[24]={0};
-    // for(n;n<chunk.length;++n){
-    //     if(n==0){
-    //         if((chunk.p_data[n]==73) && (chunk.p_data[n+1]==72) && (chunk.p_data[n+2]==68) && (chunk.p_data[n+3]==82)){
-    //             temp_chunk[n] = chunk.p_data[n];
-    //         }
-    //     }
-        
-    // chunk = extract_actual_chunk(readed_file, chunk_type = "idat");
-    //     printf("%d\n%d\n", chunk.p_data[n], temp_chunk[n]);
-    // }
-    // crc_calculated = crc(chunk.p_data, chunk.length);
-    // printf("crc calculated: %x\n", crc_calculated);
-
-    //////////////tobe commented out///////////////////////////
-    struct chunk chunk_ihdr = get_chunk(readed_file, chunk_type = "ihdr");
-    U32 crc_ihdr = crc(chunk_ihdr.p_data, chunk_ihdr.length);
-    struct chunk chunk_idat = get_chunk(readed_file, chunk_type = "idat");
-    U32 crc_idat = crc(chunk_idat.p_data, chunk_idat.length);
-    struct chunk chunk_iend = get_chunk(readed_file, chunk_type = "iend");
-    U32 crc_iend = crc(chunk_iend.p_data, chunk_iend.length);
-    //////////////////////////////////////////////////////////
-
-
-
-    if(crc_ihdr != chunk_ihdr.crc){
-        printf("IHDR chunk CRC error: computed %x, expected %x\n", crc_ihdr, chunk_ihdr.crc);
+    ///////CRC//////////
+    simple_PNG_p png = get_image(readed_file);
+    U8 *ihdr_data_crc_ptr;
+    U8 ihdr_data_crc[120];
+    U8 *idat_data_crc_ptr;
+    U8 idat_data_crc[40000];
+    U8 *iend_data_crc_ptr;
+    U8 iend_data_crc[120];
+    /* IHDR */
+    for(i=0;i<4;++i){
+        ihdr_data_crc[i] = png.p_IHDR->type[i];
     }
-    if(crc_idat != chunk_idat.crc){
-        printf("IDAT chunk CRC error: computed %x, expected %x\n", crc_idat, chunk_idat.crc);
+    k=0;
+    for(i=4;i<(4+(png.p_IHDR->length));++i){
+        ihdr_data_crc[i] = png.p_IHDR->p_data[k];
+        ++k;
     }
-    if(crc_iend != chunk_iend.crc){
-        printf("IEND chunk CRC error: computed %x, expected %x\n", crc_iend, chunk_iend.crc);
+    ihdr_data_crc_ptr = ihdr_data_crc; 
+
+    /* IDAT */
+    for(i=0;i<4;++i){
+        idat_data_crc[i] = png.p_IDAT->type[i];
     }
+    k=0;
+    for(i=4;i<(4+(png.p_IDAT->length));++i){
+        idat_data_crc[i] = png.p_IDAT->p_data[k];
+        ++k;
+    }
+    idat_data_crc_ptr = idat_data_crc;
+
+    // /* IEND */
+    for(i=0;i<4;++i){
+        iend_data_crc[i] = png.p_IEND->type[i];
+    }
+    iend_data_crc_ptr = iend_data_crc;
+
+    U32 crc_ihdr = crc(ihdr_data_crc_ptr, (png.p_IHDR->length)+4);
+    U32 crc_idat = crc(idat_data_crc_ptr, (png.p_IDAT->length)+4);
+    U32 crc_iend = crc(iend_data_crc_ptr, (png.p_IEND->length)+4);
+    // //////////////////////////////////////////////////////////
+
+
+
+    if(crc_ihdr != png.p_IHDR->crc){
+        printf("IHDR chunk CRC error: computed %x, expected %x\n", crc_ihdr, png.p_IHDR->crc);
+    }
+    if(crc_idat != png.p_IDAT->crc){
+        printf("IDAT chunk CRC error: computed %x, expected %x\n", crc_idat, png.p_IDAT->crc);
+    }
+    if(crc_iend != png.p_IEND->crc){
+        printf("IEND chunk CRC error: computed %x, expected %x\n", crc_iend, png.p_IEND->crc);
+    }
+    // get_image(readed_file);
 
 
     return 0;

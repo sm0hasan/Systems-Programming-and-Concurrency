@@ -21,7 +21,7 @@ int main(int argc, char *argv[])
     int k;
     int width;
     int height;
-    U32 readed_file[1000];
+    U32 readed_file[100000];
     char chunk_type;
     // int tracker = 0;
     // FILE *files;
@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
             printf("failed to open file");
             return 3;
         }
-        fread(readed_file, sizeof(U32), 1000, files);
+        fread(readed_file, sizeof(U32), 100000, files);
         /////////Print width and height///////////
         (ihdr_in).width = ntohl(readed_file[4]);
         (ihdr_in).height = ntohl(readed_file[5]);
@@ -54,12 +54,13 @@ int main(int argc, char *argv[])
         // printf("%0x\n", ntohl(readed_file[7]));
         // printf("%x\n", ((ntohl(readed_file[7])<<8)));
         ///////////////////////////////////////
-        chunk = extract_actual_chunk(readed_file, chunk_type = "idat");
+        // chunk = extract_actual_chunk(readed_file, chunk_type = "idat");
+        simple_PNG_p png = get_image(readed_file);
         // for(i=0; i<chunk.length; ++i){
         //     printf("idat: %x\n", chunk.actual_data[i]);
         // }
         
-        i = mem_inf(&dest, &dest_len, chunk.p_data, chunk.length);
+        i = mem_inf(&dest, &dest_len, png.p_IDAT->p_data, png.p_IDAT->length);
         printf("length: %d\n", dest_len);
         zerr(i);
         if(i!=0){
@@ -76,9 +77,8 @@ int main(int argc, char *argv[])
                 ++p;
             }
         }
-        
-        
     }
+
 
  
 

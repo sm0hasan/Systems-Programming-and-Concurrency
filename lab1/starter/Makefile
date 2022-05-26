@@ -9,7 +9,7 @@ LDFLAGS = -g   # debugging symbols in build
 LDLIBS = -lz   # link with libz
 
 # For students 
-LIB_UTIL = png_util/zutil.o png_util/lab_png.h
+LIB_UTIL = png_util/crc.o png_util/lab_png.h png_util/zutil.o
 SRCS   = catpng.c
 OBJS   = catpng.o $(LIB_UTIL)
 
@@ -28,27 +28,27 @@ main.out: $(OBJS)
 
 -include $(SRCS:.c=.d)
 
-pnginfo.out: $(OBJS) 
-	$(LD) -o $@ $^ $(LDLIBS) $(LDFLAGS) 
+# pnginfo.out: $(OBJS) 
+# 	$(LD) -o $@ $^ $(LDLIBS) $(LDFLAGS) 
 
-%.o: %.c 
-	$(CC) $(CFLAGS) -c $< 
+# %.o: %.c 
+# 	$(CC) $(CFLAGS) -c $< 
 
-%.d: %.c
-	gcc -MM -MF $@ $<
+# %.d: %.c
+# 	gcc -MM -MF $@ $<
 
--include $(SRCS:.c=.d)
+# -include $(SRCS:.c=.d)
 
-pngfind.out: $(OBJS) 
-	$(LD) -o $@ $^ $(LDLIBS) $(LDFLAGS) 
+# pngfind.out: $(OBJS) 
+# 	$(LD) -o $@ $^ $(LDLIBS) $(LDFLAGS) 
 
-%.o: %.c 
-	$(CC) $(CFLAGS) -c $< 
+# %.o: %.c 
+# 	$(CC) $(CFLAGS) -c $< 
 
-%.d: %.c
-	gcc -MM -MF $@ $<
+# %.d: %.c
+# 	gcc -MM -MF $@ $<
 
--include $(SRCS:.c=.d)
+# -include $(SRCS:.c=.d)
 
 catpng.out: $(OBJS) 
 	$(LD) -o $@ $^ $(LDLIBS) $(LDFLAGS) 
