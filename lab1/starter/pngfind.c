@@ -145,8 +145,6 @@ void *f_name(char *argv, char *file_path, U32 *output[]) {
     return;
 }
 
-
-
 int main(int argc, char *argv[]) {
 
     if (argc == 1) {
@@ -160,6 +158,9 @@ int main(int argc, char *argv[]) {
     
     f_name(open_dir, file_path, output_path);
     printf("xxxxxxxx This is the print of the list: xxxxxxxxx\n");
+    if (sizeof(output_path) == 0){
+        printf("findpng: No PNG file found");
+    }
     for(int i=0; i<100; ++i){
         if(output_path[i]=="nmsl"){
             break;

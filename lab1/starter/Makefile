@@ -1,5 +1,3 @@
-
-
 # Makefile  
 
 CC = gcc       # compiler
@@ -10,25 +8,16 @@ LDLIBS = -lz   # link with libz
 
 # For students 
 LIB_UTIL = png_util/crc.o png_util/lab_png.h png_util/zutil.o
-SRCS   = catpng.c
-OBJS   = catpng.o $(LIB_UTIL)
+SRCS   = pnginfo.c pngfind.c #catpng.c
+OBJS1   = pnginfo.o  $(LIB_UTIL)
+OBJS2   = pngfind.o  $(LIB_UTIL)
+#OBJS3   = catpng.o  $(LIB_UTIL)
 
-TARGETS = catpng.out
+TARGETS = pnginfo.out pngfind.out #catpng.out
 
 all: ${TARGETS}
 
-main.out: $(OBJS) 
-	$(LD) -o $@ $^ $(LDLIBS) $(LDFLAGS) 
-
-%.o: %.c 
-	$(CC) $(CFLAGS) -c $< 
-
-%.d: %.c
-	gcc -MM -MF $@ $<
-
--include $(SRCS:.c=.d)
-
-# pnginfo.out: $(OBJS) 
+# main.out: $(OBJS) 
 # 	$(LD) -o $@ $^ $(LDLIBS) $(LDFLAGS) 
 
 # %.o: %.c 
@@ -39,18 +28,7 @@ main.out: $(OBJS)
 
 # -include $(SRCS:.c=.d)
 
-# pngfind.out: $(OBJS) 
-# 	$(LD) -o $@ $^ $(LDLIBS) $(LDFLAGS) 
-
-# %.o: %.c 
-# 	$(CC) $(CFLAGS) -c $< 
-
-# %.d: %.c
-# 	gcc -MM -MF $@ $<
-
-# -include $(SRCS:.c=.d)
-
-catpng.out: $(OBJS) 
+pnginfo.out: $(OBJS1) 
 	$(LD) -o $@ $^ $(LDLIBS) $(LDFLAGS) 
 
 %.o: %.c 
@@ -60,35 +38,29 @@ catpng.out: $(OBJS)
 	gcc -MM -MF $@ $<
 
 -include $(SRCS:.c=.d)
+
+pngfind.out: $(OBJS2) 
+	$(LD) -o $@ $^ $(LDLIBS) $(LDFLAGS) 
+
+%.o: %.c 
+	$(CC) $(CFLAGS) -c $< 
+
+%.d: %.c
+	gcc -MM -MF $@ $<
+
+-include $(SRCS:.c=.d)
+
+# catpng.out: $(OBJS3) 
+# 	$(LD) -o $@ $^ $(LDLIBS) $(LDFLAGS) 
+
+# %.o: %.c 
+# 	$(CC) $(CFLAGS) -c $< 
+
+# %.d: %.c
+# 	gcc -MM -MF $@ $<
+
+# -include $(SRCS:.c=.d)
 
 .PHONY: clean
 clean:
 	rm -f *.d *.o $(TARGETS) 
-
-
-# CC=gcc
-# CFLAGS=-Wall -g
-# LD=gcc
-# LDFLAGS=-g
-# LDLIBS = -lz
-# LIB_UTIL = zutil.o crc.o
-# OBJS1 = pnginfo.o crc.o
-# OBJS2 = pngfind.o crc.o
-
-# all: pnginfo pngfind
-
-# pnginfo: $(OBJS1)
-# 	$(LD) $(LDFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS)
-
-# pngfind: $(OBJS2)
-# 	$(LD) $(LDFLAGS) -o $@ $^ $(LDFLAGS) $(LDLIBS)
-
-# .c.o:
-# 	$(CC) $(CFLAGS) -c $<
-
-# %.d: %.c
-# 	gcc -MM -FF $@ $<
-
-# .PHONY: clean
-# clean:
-# 	rm -f .f.o .out.d all.png pnginfo pngfind 

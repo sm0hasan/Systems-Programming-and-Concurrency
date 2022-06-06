@@ -41,9 +41,9 @@ int main(int argc, char *argv[])
     ////////////Check if png///////////////
     int i = ntohl(readed_file[0]);
     // printf("%d\n", i);
-    if(i == png_bytes){
-        printf("%s: It is a PNG file\n", argv[1]);
-    }else{
+    if(i != png_bytes){
+    //     printf("%s: It is a PNG file\n", argv[1]);
+    // }else{
         printf("%s: Not a PNG file", argv[1]);
         return 0;
     }
@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
     /////////Print width and height///////////
     (ihdr_in).width = ntohl(readed_file[4]);
     (ihdr_in).height = ntohl(readed_file[5]);
-    printf("%s: %d x %d\n", argv[1], get_png_height(ihdr_in), get_png_width(ihdr_in));
+    printf("%s: %d x %d\n", argv[1], get_png_width(ihdr_in), get_png_height(ihdr_in));
 
     ///////CRC//////////
     simple_PNG_p png = get_image(readed_file);
