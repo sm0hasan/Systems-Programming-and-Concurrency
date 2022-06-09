@@ -1,0 +1,2 @@
+To compile, one has to cd into both **cURL and png_util** folder and make the files in there, then make the file for paster.c.
+We would love any instructions on how to make a single makefile in this scenario.

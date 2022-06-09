@@ -13,9 +13,9 @@
 #include <curl/curl.h>
 #include "cURL/main_write_header_cb.c"
 // #include "/home/sm8hasan/G_202_10/lab1/starter/png_util/lab_png.h"
-#include "/home/q282liu/G_202_10/lab1/starter/png_util/lab_png.h"
-#include "/home/q282liu/G_202_10/lab1/starter/png_util/crc.h"
-#include "/home/q282liu/G_202_10/lab1/starter/png_util/zutil.h"
+#include "png_util/lab_png.h"
+#include "png_util/crc.h"
+#include "png_util/zutil.h"
 
 //Defines
 #define ECE252_HEADER "X-Ece252-Fragment: "
