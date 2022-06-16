@@ -1,0 +1,219 @@
+########### Setting Up Directory  ###########
+Removing all .pngs, .o, .d and executables
+########### Running Tests  ###########
+>> make all
+paster compiled +6
+Any *.out renamed to *
+
+
+>> ./paster
+Number of threads detected: 2
+Expected: 1 or 2
+correct +6
+Program completed successfully
+Process finished after 56 seconds
+image passes binary comparison +4
+
+>> ./pnginfo cat_all.png
+Got: 
+cat_all.png: 400 x 300 
+Dimensions correct +2
+No crc errors +2
+
+>> ./paster -n 2
+Program completed successfully
+correct +1
+
+>> ./pnginfo cat_all.png
+Got: 
+cat_all.png: 400 x 300 
+Dimensions correct +1
+No crc errors +1
+
+>> ./paster -n 3
+Program completed successfully
+correct +1
+
+>> ./pnginfo cat_all.png
+Got: 
+cat_all.png: 400 x 300 
+Dimensions correct +1
+No crc errors +1
+
+>> ./paster -t 2 -n 1
+Number of threads detected: 3
+Expected: 2 or 3
+correct +2
+Program completed successfully
+image passess binary test +1
+
+>> ./pnginfo cat_all.png
+Got: 
+cat_all.png: 400 x 300 
+Dimensions correct +1
+No crc errors +1
+
+Average processing time for 5 runs is 27 seconds
+
+>> ./paster -t 3 -n 1
+Number of threads detected: 4
+Expected: 3 or 4
+correct +2
+Program completed successfully
+image passess binary test +1
+
+>> ./pnginfo cat_all.png
+Got: 
+cat_all.png: 400 x 300 
+Dimensions correct +1
+No crc errors +1
+
+Average processing time for 5 runs is 20 seconds
+
+>> ./paster -t 4 -n 1
+Number of threads detected: 5
+Expected: 4 or 5
+correct +2
+Program completed successfully
+image passess binary test +1
+
+>> ./pnginfo cat_all.png
+Got: 
+cat_all.png: 400 x 300 
+Dimensions correct +1
+No crc errors +1
+
+Average processing time for 5 runs is 11 seconds
+
+>> ./paster -t 5 -n 1
+Number of threads detected: 6
+Expected: 5 or 6
+correct +2
+Program completed successfully
+image passess binary test +1
+
+>> ./pnginfo cat_all.png
+Got: 
+cat_all.png: 400 x 300 
+Dimensions correct +1
+No crc errors +1
+
+Average processing time for 5 runs is 9 seconds
+
+>> ./paster -t 6 -n 1
+Number of threads detected: 7
+Expected: 6 or 7
+correct +2
+Program completed successfully
+image passess binary test +1
+
+>> ./pnginfo cat_all.png
+Got: 
+cat_all.png: 400 x 300 
+Dimensions correct +1
+No crc errors +1
+
+Average processing time for 5 runs is 10 seconds
+
+>> ./paster -t 7 -n 1
+Number of threads detected: 8
+Expected: 7 or 8
+correct +2
+Program completed successfully
+image passess binary test +1
+
+>> ./pnginfo cat_all.png
+Got: 
+cat_all.png: 400 x 300 
+Dimensions correct +1
+No crc errors +1
+
+Average processing time for 5 runs is 7 seconds
+
+>> ./paster -t 8 -n 1
+Number of threads detected: 9
+Expected: 8 or 9
+correct +2
+Program completed successfully
+image passess binary test +1
+
+>> ./pnginfo cat_all.png
+Got: 
+cat_all.png: 400 x 300 
+Dimensions correct +1
+No crc errors +1
+
+Average processing time for 5 runs is 8 seconds
+
+>> ./paster -t 9 -n 1
+Number of threads detected: 10
+Expected: 9 or 10
+correct +2
+Program completed successfully
+image passess binary test +1
+
+>> ./pnginfo cat_all.png
+Got: 
+cat_all.png: 400 x 300 
+Dimensions correct +1
+No crc errors +1
+
+Average processing time for 5 runs is 8 seconds
+
+>> ./paster -t 10 -n 1
+Number of threads detected: 11
+Expected: 10 or 11
+correct +2
+Program completed successfully
+image passess binary test +1
+
+>> ./pnginfo cat_all.png
+Got: 
+cat_all.png: 400 x 300 
+Dimensions correct +1
+No crc errors +1
+
+Average processing time for 5 runs is 6 seconds
+
+
+    # of Threads:  1  ...  10
+Processing Times: 56 27 20 11 9 10 7 8 8 6
+-t10 is faster than -t1 +5
+
+>> ./paster -t 10 -n 2
+Program completed successfully
+image passes binary comparison +2
+
+>> ./pnginfo cat_all.png
+Got: 
+cat_all.png: 400 x 300 
+Dimensions correct +2
+No crc errors +1
+
+>> ./paster -t 10 -n 3
+Program completed successfully
+image passes binary comparison +2
+
+>> ./pnginfo cat_all.png
+Got: 
+cat_all.png: 400 x 300 
+Dimensions correct +2
+No crc errors +1
+
+>> make clean
+No .o found +2
+No .d found
+No executable found +2
+
+########### Score ###########
+
+Makefile score: 4/10
+paster single-threaded score: 20/20
+paster multi-threaded score:  60/60
+Total lab 2 score:  84/90
+
+########### Additional Comments ###########
+You have used 2 grace days
+Makefile assumes .o to be present in the png_util and therefore failed auto compilation. (-6)
+Please avoid this problem next time.
+Lab 1 submission still not detected.
