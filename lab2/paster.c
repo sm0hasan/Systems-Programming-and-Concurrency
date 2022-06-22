@@ -191,8 +191,6 @@ int catpng(char *strip_array[])
     int height = 0;
     U32 readed_file[100000];
     char chunk_type;
-    // int tracker = 0;
-    // FILE *files;
     int *png_bytes = -1991225785;
     struct data_IHDR ihdr_in;
     struct chunk chunk;
@@ -213,22 +211,6 @@ int catpng(char *strip_array[])
     for(k=0;k<50;++k){
         U8 dest[2000000];   
         int i = 0;
-        // FILE *files;
-        // files = fopen(argv[k], "rb");
-        // if(files == NULL){
-        //     printf("failed to open file");
-        //     return 3;
-        // }
-        // fread(readed_file, sizeof(U32), 100000, files);
-        /////////Print width and height///////////
-        // (ihdr_in).width = ntohl(strip_array[k][4]);
-        // (ihdr_in).height = ntohl(strip_array[k][5]);
-        // printf("%s: %d x %d\n", k, get_png_height(ihdr_in), get_png_width(ihdr_in));
-        // total_height += get_png_height(ihdr_in);
-        // printf("%0x\n", ntohl(readed_file[7]));
-        // printf("%x\n", ((ntohl(readed_file[7])<<8)));
-        ///////////////////////////////////////
-        // chunk = extract_actual_chunk(readed_file, chunk_type = "idat");
         simple_PNG_p png = get_image_thread(strip_array[k]);
         // for(i=0; i<chunk.length; ++i){
         //     printf("idat: %x\n", chunk.actual_data[i]);
@@ -271,13 +253,6 @@ int catpng(char *strip_array[])
 
     ////////////STRUCT PNG ASSIGNMENT//////////
     simple_PNG_p png;
-    // FILE *files;
-    // files = fopen(argv[1], "rb");
-    // if(files == NULL){
-    //     printf("failed to open file");
-    //     return 3;
-    // }
-    // fread(readed_file, sizeof(U32), 400000, files);
     png = get_image_thread(strip_array[0]);
 
     
