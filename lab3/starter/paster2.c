@@ -72,7 +72,6 @@ int main( int argc, char* argv[] ) {
     int image = 1;
 
     int arguments = argc;
-    printf("Arguments: %d\n", arguments);
     if (arguments != 1){
         if (arguments < 6){
             printf("missing argument\n");
@@ -215,25 +214,25 @@ int main( int argc, char* argv[] ) {
                 sem_wait(&sems[1]);
                 int a=0;
                 a = pstack->pos;
-                printf("pstack pos: %d\n", a);
+                //printf("pstack pos: %d\n", a);
                 consumer(&((pstack->items[a]).arr), dest_total_ptr, dest_len_total_ptr, dest_len_total_ptr_prev);
                 index_flag = *dest_len_total_ptr_prev;// size of each inf_strip
                 arr_of_each_inf.index = index_flag;
                 arr_of_each_inf.seq = ((pstack->items[a]).seq);
-                printf("arr_of_each_inf.seq = %d", arr_of_each_inf.seq);
+                //printf("arr_of_each_inf.seq = %d", arr_of_each_inf.seq);
                 memcpy(&arr_of_each_inf.arr, dest_total_ptr, arr_of_each_inf.index);
                 push(inf_stack, arr_of_each_inf);
                 pop(pstack);
-                printf("pop_count: %d\n", k);
+                //printf("pop_count: %d\n", k);
                 sem_post(&sems[1]);
                 int sem0_track =0;
                 sem_getvalue(&sems[0], &sem0_track);
                 sem_post(&sems[0]);
             }
             
-            for(k=0;k<10;k++){
-                printf("inf_stack[0][%d]: %x\n",k,(inf_stack->items[0]).arr[k]);
-            }
+            // for(k=0;k<10;k++){
+            //     printf("inf_stack[0][%d]: %x\n",k,(inf_stack->items[0]).arr[k]);
+            // }
             exit(0);
         }else {
             perror("fork");
@@ -246,7 +245,7 @@ int main( int argc, char* argv[] ) {
         for ( i = 0; i < num_child; i++ ) {
             waitpid(cpids[i], &state, 0);          
             if (WIFEXITED(state)) {
-                printf("Child cpid[%d]=%d terminated with state: %d.\n", i, cpids[i], state);
+                //printf("Child cpid[%d]=%d terminated with state: %d.\n", i, cpids[i], state);
             }
               
         }
@@ -256,9 +255,9 @@ int main( int argc, char* argv[] ) {
             abort();
         }
         times[1] = (tv.tv_sec) + tv.tv_usec/1000000.;
-        printf("Parent pid = %d: total execution time is %.6lf seconds\n", getpid(),  times[1] - times[0]);
+        printf("paster2 execution time: %.6lf seconds\n",  times[1] - times[0]);
         
-        printf("dest_len_total before cat: %d\n", *dest_len_total_ptr);
+        //printf("dest_len_total before cat: %d\n", *dest_len_total_ptr);
         parent_catpng(&((pstack->items[0]).arr), inf_stack, dest_len_total_ptr);
         for(i=0;i<NUM_SEMS;i++){
             sem_destroy(&sems[i]);
@@ -292,7 +291,7 @@ int producer(int img, int part, int shmid, RECV_BUF *p_shm_recv_buf, sem_t curl_
     
     choose_server();
     sprintf(url, "http://ece252-%d.uwaterloo.ca:2530/image?img=%d&part=%d",server_counter, image, strip_num);
-    printf("%s\n", url);
+    //printf("%s\n", url);
 
     curl_global_init(CURL_GLOBAL_DEFAULT);
 
@@ -317,7 +316,7 @@ int producer(int img, int part, int shmid, RECV_BUF *p_shm_recv_buf, sem_t curl_
     if( res != CURLE_OK) {
         fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
     }else {
-	    printf("%lu bytes received in memory %p, seq=%d.\n",  \
+	    //printf("%lu bytes received in memory %p, seq=%d.\n",  \
         p_shm_recv_buf->size, p_shm_recv_buf->buf, p_shm_recv_buf->seq);
         
     }
@@ -354,8 +353,8 @@ int consumer(U8 *array, U8 (*shdest_total)[], U64 *shdest_len_total, U64 *index_
     simple_PNG_p png = get_image_thread(array);
 
     i = mem_inf(&dest, &dest_len, png.p_IDAT->p_data, png.p_IDAT->length);
-    printf("length: %d\n", dest_len);
-    zerr(i);
+    //printf("length: %d\n", dest_len);
+    //zerr(i);
 
     int p = 0;
     for(i=0; i<dest_len; ++i){
@@ -404,19 +403,19 @@ int parent_catpng(U8 *array, struct int_stack *infstack, U64 *dest_len_total){
                 ++b;
                 --c;
                 dest_total_index += ((infstack->items[i]).index);
-                printf("dest_total_index:%d\n",((infstack->items[i]).index));
+                //printf("dest_total_index:%d\n",((infstack->items[i]).index));
             }
         }    
     }
     ///////////Deflate Operation/////////////////
     k = mem_def(def_result_ptr, &def_len, &dest_total, *dest_len_total, Z_DEFAULT_COMPRESSION);
-    printf("def_len: %d\n", def_len);
+    //printf("def_len: %d\n", def_len);
         
-    if(k==0){
-        printf("yessir\n");
-    }else{
-        printf("mem_def failed\n");
-    }
+    // if(k==0){
+    //     printf("yessir\n");
+    // }else{
+    //     printf("mem_def failed\n");
+    // }
     //////////////////////////////////////////
 
     ////////////STRUCT PNG ASSIGNMENT//////////
@@ -453,7 +452,7 @@ int parent_catpng(U8 *array, struct int_stack *infstack, U64 *dest_len_total){
     ihdr_data_crc_ptr = ihdr_data_crc; 
     U32 crc_ihdr = crc(ihdr_data_crc_ptr, (png.p_IHDR->length)+4);
     png.p_IHDR->crc = crc_ihdr;
-    printf("new ihdr crc: %x\n", png.p_IHDR->crc);///IHDR CRC: WORKS/////
+    //printf("new ihdr crc: %x\n", png.p_IHDR->crc);///IHDR CRC: WORKS/////
     U32 ihdr_total[120];
     U32 *ihdr_total_ptr;
 
@@ -477,7 +476,7 @@ int parent_catpng(U8 *array, struct int_stack *infstack, U64 *dest_len_total){
     }
     idat_data_crc_ptr = idat_data_crc;
     png.p_IDAT->crc = crc(idat_data_crc_ptr, (png.p_IDAT->length)+4);
-    printf("new idata crc:%x\n", png.p_IDAT->crc);
+    //printf("new idata crc:%x\n", png.p_IDAT->crc);
     FILE *new_pic = fopen("./cat.png", "wb");
     U64 *initial = 0x0a1a0a0d474e5089;
     U32 *ihdr_len = 0x0d000000;
@@ -489,7 +488,7 @@ int parent_catpng(U8 *array, struct int_stack *infstack, U64 *dest_len_total){
     U32 *ihdr_crc = ntohl(png.p_IHDR->crc);
     fwrite(&ihdr_crc, 4, 1, new_pic);
     U32 *idat_length = ntohl(def_len);
-    printf("def_len: %x\n", idat_length);
+    //printf("def_len: %x\n", idat_length);
     fwrite(&idat_length, 4, 1, new_pic);
     fwrite(&(png.p_IDAT->type), 4, 1, new_pic);
     fwrite(def_result_ptr, def_len, 1, new_pic);
