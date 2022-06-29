@@ -36,10 +36,10 @@
 #define BUF_SIZE 1048576  /* 1024*1024 = 1M */
 #define BUF_INC  524288   /* 1024*512  = 0.5M */
 #define NUM_OF_ELEMS 50
-#define NUM_CHILD 8
-#define STACK_SIZE 4
+#define NUM_CHILD 20 // P+C
+#define STACK_SIZE 10 //B
 #define NUM_SEMS 4
-#define SLEEP 200
+#define SLEEP 200 //X
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER; 
 
 //Global Varibales
@@ -60,24 +60,46 @@ int consumer(U8 *array, U8 (*shdest_total)[], U64 *shdest_len_total, U64 *index_
 int parent_catpng(U8 *array, struct int_stack *infstack, U64 *dest_len_total);
 
 int main( int argc, char* argv[] ) {
+
+    //Arguments taken in.
+    int i=0;
+    int k=0;
+    int buffer_size = 1;
+    int num_producers = 1;//P
+    int num_consumers = 1;//C
+    int num_child = num_producers + num_consumers;
+    int sleep = 0;
+    int image = 1;
+
+    int arguments = argc;
+    printf("Arguments: %d\n", arguments);
+    if (arguments != 1){
+        if (arguments < 6){
+            printf("missing argument\n");
+            exit(-1);
+        }
+        if (arguments > 6) {
+        printf("too many arguments\n");
+        exit(-1);
+        }
+        buffer_size = atoi(argv[1]);
+        num_producers = atoi(argv[2]);
+        num_consumers = atoi(argv[3]);
+        sleep = atoi(argv[4]);
+        image = atoi(argv[5]);
+        num_child = num_producers + num_consumers;
+    }
+
     // VAR DECLARATION
     sem_t *sems; // 0: spaces (is_full), 1: mutex, 2: items(is_empty)
     int buf_size = sizeof_shm_recv_buf(BUF_SIZE);
-    int shm_size = sizeof_shm_stack(STACK_SIZE);
+    int shm_size = sizeof_shm_stack(buffer_size);
     int inf_size = sizeof_shm_stack(50);
     int stack_id = shmget(IPC_PRIVATE, shm_size, IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
     int buf_id = shmget(IPC_PRIVATE, buf_size, IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
     int inf_stack_id = shmget(IPC_PRIVATE, inf_size, IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
     int sem_id = shmget(IPC_PRIVATE, sizeof(sem_t) * NUM_SEMS, IPC_CREAT | IPC_EXCL | S_IRUSR | S_IWUSR);
 
-    //Arguments taken in.
-    int i=0;
-    int k=0;
-    int buffer_size = 2;
-    int num_producers = 4;
-    int num_consumers = 4;
-    int sleep = 10;
-    int image = 1;
     int parray[num_producers];
     int carray[num_consumers];
     for(i=0;i<num_producers;i++){
@@ -91,8 +113,8 @@ int main( int argc, char* argv[] ) {
     // fork
     pid_t pid=0;
     pid_t pid1=0;
-    pid_t cpids[NUM_CHILD];
-    //pid_t ppids[NUM_CHILD];
+    pid_t cpids[num_child];
+    //pid_t ppids[num_child];
     int state;
     int state_c;
     double times[2];
@@ -105,7 +127,7 @@ int main( int argc, char* argv[] ) {
     int shmid4 = shmget(IPC_PRIVATE, sizeof(U64), IPC_CREAT | 0600);//Consumer and parent for destination array_size
     sems = shmat(sem_id, NULL, 0);
     for(i=0;i<NUM_SEMS;i++){
-        sem_init(&sems[i], NUM_CHILD, 1);
+        sem_init(&sems[i], num_child, 1);
     }
 
     
@@ -119,10 +141,8 @@ int main( int argc, char* argv[] ) {
     struct int_stack *inf_stack;
     pstack = shmat(stack_id, NULL, 0);
     inf_stack = shmat(inf_stack_id, NULL, 0);
-    init_shm_stack(pstack, STACK_SIZE);
+    init_shm_stack(pstack, buffer_size);
     init_shm_stack(inf_stack, 50);
-    // U32 *index_flag = 0;
-    // index_flag = shmat(shmid3, NULL, 0);
 
     // Get time
     if (gettimeofday(&tv, NULL) != 0) {
@@ -132,36 +152,26 @@ int main( int argc, char* argv[] ) {
     times[0] = (tv.tv_sec) + tv.tv_usec/1000000.;
     
     //Child
-    for ( i = 0; i < NUM_CHILD; i++) {
+    for ( i = 0; i < num_child; i++) {
         
         pid = fork();
 
         if ( pid > 0 ) {        /* parent proc */
-            //waitpid(pid, &state, 0); // wait for 
             cpids[i] = pid;
         } else if ( (pid == 0) && (i < num_producers)) { /* Producer proc */
             //Initializing receive stack
             
-           // struct int_stack *pstack; 
-            //pstack = shmat(stack_id, NULL, 0);
             if ( pstack == (void *) -1 ) {
                 perror("shmat");
                 abort();
             }
             
             int k=0;
-            // int abc = push(pstack, 0);
-            // if(abc != 0){
-            //     printf("PUSH TO STACK FAILED\n");
-            //     abort();
-            // }
-
-            //init_shm_stack(pstack, STACK_SIZE);
             
             for(k=parray[i];k<parray[i+1];k++){
-                //if((pstack->pos) == (STACK_SIZE-1)){
-                    sem_wait(&sems[0]);
-                //}
+
+                sem_wait(&sems[0]);
+
                 RECV_BUF *p_shm_recv_buf;
                 p_shm_recv_buf = shmat(buf_id, NULL, 0);
                 if(p_shm_recv_buf == -1){
@@ -178,38 +188,22 @@ int main( int argc, char* argv[] ) {
                 sem_post(&sems[1]);
                 int sem2_track=0;
                 sem_getvalue(&sems[2], &sem2_track);
-                //if((pstack->pos)==0 || sem2_track<0){
-                    sem_post(&sems[2]);
-                //}
+                
+                sem_post(&sems[2]);
+            
                 shmdt(p_shm_recv_buf);
             }
-            exit(0);
-        //testing code
-       /*
-        for(k=0;k<30;k++){
-            printf("producer exited\n");
-            printf("producer data[%d]: %x\n", k, strip_set[0][k]);
-        }
 
-        for(k=0;k<30;k++){
-            printf("producer exited\n");
-            printf("producer data[%d]: %x\n", k, (pstack->items[1]).arr[k]);
-        }*/
+            exit(0);
             break;
         } else if((pid == 0) && (i >=num_producers)){ // Consumer Proc
-            // waitpid(ppids[0], NULL, 0);
-            //Initializing receive stack
-            //struct int_stack *pstack; 
-            //struct int_stack *inf_stack;
-            //pstack = shmat(stack_id, NULL, 0);
-            //inf_stack = shmat(inf_stack_id, NULL, 0);
-            usleep(SLEEP*1000);
+
+            usleep(sleep*1000);
             if ( pstack == (void *) -1 ) {
                 perror("shmat");
                 abort();
             }
-            //init_shm_stack(pstack, STACK_SIZE);
-            //init_shm_stack(inf_stack, 50);
+            
             if(i==num_producers){
                 sem_wait(&sems[2]);//it should only wait for the first time
             }
@@ -217,14 +211,11 @@ int main( int argc, char* argv[] ) {
             U32 index_flag = 0;
             *dest_len_total_ptr = 0;
             for(k=carray[i-num_producers];k<carray[i-num_producers+1];k++){
-                //if((pstack->pos) == -1){
-                    sem_wait(&sems[2]);
-                //}
+                sem_wait(&sems[2]);
                 sem_wait(&sems[1]);
                 int a=0;
                 a = pstack->pos;
                 printf("pstack pos: %d\n", a);
-                //dest_len_total_ptr_prev = dest_len_total_ptr;
                 consumer(&((pstack->items[a]).arr), dest_total_ptr, dest_len_total_ptr, dest_len_total_ptr_prev);
                 index_flag = *dest_len_total_ptr_prev;// size of each inf_strip
                 arr_of_each_inf.index = index_flag;
@@ -237,9 +228,7 @@ int main( int argc, char* argv[] ) {
                 sem_post(&sems[1]);
                 int sem0_track =0;
                 sem_getvalue(&sems[0], &sem0_track);
-                //if((pstack->pos)==(STACK_SIZE-2) || sem0_track<0){
-                    sem_post(&sems[0]);
-                //}
+                sem_post(&sems[0]);
             }
             
             for(k=0;k<10;k++){
@@ -252,42 +241,23 @@ int main( int argc, char* argv[] ) {
         }
         
     }
-   /*
-    // Parent
-    // if(pid>0){ //producer parent
-    //     for(i=0;i<1;i++){
-    //         waitpid(ppids[i], &state, 0);
-    //         if (WIFEXITED(state)) {
-    //             printf("Child cpid[%d]=%d terminated with state: %d.\n", i, ppids[i], state);
-    //         }
-    //     }
-    // }
-    */
+
     if ( pid > 0 ) {            /* consumer parent */
-        for ( i = 0; i < NUM_CHILD; i++ ) {
+        for ( i = 0; i < num_child; i++ ) {
             waitpid(cpids[i], &state, 0);          
             if (WIFEXITED(state)) {
                 printf("Child cpid[%d]=%d terminated with state: %d.\n", i, cpids[i], state);
             }
               
         }
-        // dest_total_ptr = (U8 *)shmat(shmid1, NULL, 0);
-        // struct int_stack *pstack; 
-        // struct int_stack *inf_stack;
-        // pstack = shmat(stack_id, NULL, 0);
-        // inf_stack = shmat(inf_stack_id, NULL, 0);
-        // init_shm_stack(pstack, STACK_SIZE);
-        // init_shm_stack(inf_stack, STACK_SIZE);
+        
         if (gettimeofday(&tv, NULL) != 0) {
             perror("gettimeofday");
             abort();
         }
         times[1] = (tv.tv_sec) + tv.tv_usec/1000000.;
         printf("Parent pid = %d: total execution time is %.6lf seconds\n", getpid(),  times[1] - times[0]);
-        // remove("./cat.png");
-        // for(k=0;k<10;k++){
-        //     printf("inf data before cat: %x\n", (*dest_total_ptr)[k]);
-        // }
+        
         printf("dest_len_total before cat: %d\n", *dest_len_total_ptr);
         parent_catpng(&((pstack->items[0]).arr), inf_stack, dest_len_total_ptr);
         for(i=0;i<NUM_SEMS;i++){
@@ -295,7 +265,7 @@ int main( int argc, char* argv[] ) {
         }
     }
     kill(cpids[num_producers-1], SIGKILL);
-    kill(cpids[NUM_CHILD-1], SIGKILL);
+    kill(cpids[num_child-1], SIGKILL);
     return 0;
 }
 
@@ -310,9 +280,7 @@ int producer(int img, int part, int shmid, RECV_BUF *p_shm_recv_buf, sem_t curl_
     CURLcode res;
     char url[256];
     char fname[256];
-    // pid_t pid =getpid();
 
-    printf("entereeddddd\n");
     int image = img;
     int strip_num = part;
 
@@ -321,8 +289,6 @@ int producer(int img, int part, int shmid, RECV_BUF *p_shm_recv_buf, sem_t curl_
         perror("shmget");
         abort();
     }
-
-    
     
     choose_server();
     sprintf(url, "http://ece252-%d.uwaterloo.ca:2530/image?img=%d&part=%d",server_counter, image, strip_num);
@@ -363,13 +329,10 @@ int producer(int img, int part, int shmid, RECV_BUF *p_shm_recv_buf, sem_t curl_
         NumberOfElements ++;
     }
 
-    // write_file(fname, p_shm_recv_buf->buf, p_shm_recv_buf->size);
-
     /* cleaning up */
     curl_easy_cleanup(curl_handle);
     curl_global_cleanup();
-    // shmdt(p_shm_recv_buf);
-    // shmctl(shmid, IPC_RMID, NULL);
+    
     return 0;
 }
 
@@ -384,47 +347,24 @@ int consumer(U8 *array, U8 (*shdest_total)[], U64 *shdest_len_total, U64 *index_
     int k = 0;
     U64 dest_len=0;
     U64 dest_len_total=0;
-    // U8 dest_total[2000000]; 
-    // U32 index_flag=0;
 
     //Loop to inflate all data// *TO Be CHanged
     U8 dest[20000] = {0};   
     int i = 0;
     simple_PNG_p png = get_image_thread(array);
-    // for(i=0; i<chunk.length; ++i){
-    //     printf("idat: %x\n", chunk.actual_data[i]);
-    // }
-    // dest_len = 0;
+
     i = mem_inf(&dest, &dest_len, png.p_IDAT->p_data, png.p_IDAT->length);
     printf("length: %d\n", dest_len);
     zerr(i);
 
     int p = 0;
     for(i=0; i<dest_len; ++i){
-        // printf("index flag: %d", index_flag);
         (*shdest_total)[i] = dest[p];
-        // printf("shdest_total[%d]: %x, dest[%d]: %x\n", i, (*shdest_total)[i], p, dest[p]);
         ++p;
     }
-    // index_flag += dest_len;
-    // printf("dest_len in consumer: %d\n", dest_len);
-    // printf("index_flag trial in consumer: %d\n", index_flag);
     
-    // shdest_total = dest_total;
     *index_flag = dest_len;
     *shdest_len_total += dest_len;
-    //consuming loop
-        
-        //wait (items) - Blocks if buffer is empty
-
-       /* wait (mutex)
-        * read data from buffer
-        * post(mutex)
-        */
-       
-        // post(spaces) - increments
-
-        // further processing
 
     return 1;
 }
@@ -471,10 +411,7 @@ int parent_catpng(U8 *array, struct int_stack *infstack, U64 *dest_len_total){
     ///////////Deflate Operation/////////////////
     k = mem_def(def_result_ptr, &def_len, &dest_total, *dest_len_total, Z_DEFAULT_COMPRESSION);
     printf("def_len: %d\n", def_len);
-    
-    // for(i=0;i<10;i++){
-    //     printf("def result: %x\n",def_result[i]);
-    // }    
+        
     if(k==0){
         printf("yessir\n");
     }else{
@@ -484,9 +421,6 @@ int parent_catpng(U8 *array, struct int_stack *infstack, U64 *dest_len_total){
 
     ////////////STRUCT PNG ASSIGNMENT//////////
     simple_PNG_p png = get_image_thread(array);
-    // printf("get_image failed\n");
-    // png = get_image_thread(array);
-
     
     /*INITIAL ARRAY*/
     k=0;
@@ -500,12 +434,8 @@ int parent_catpng(U8 *array, struct int_stack *infstack, U64 *dest_len_total){
     k=0;
     for(i=4;i<8;++i){
         png.p_IHDR->p_data[i] = height_arr[k];
-        // printf("height: %x\n", height_arr[k]);
         ++k;
     }
-    // for(i=0;i<(png.p_IHDR->length);++i){
-    //     printf("The current IHDR: %x\n", png.p_IHDR->p_data[i]);
-    // }
 
     ///////IHDR CRC///////////
     U8 *ihdr_data_crc_ptr;
@@ -548,15 +478,12 @@ int parent_catpng(U8 *array, struct int_stack *infstack, U64 *dest_len_total){
     idat_data_crc_ptr = idat_data_crc;
     png.p_IDAT->crc = crc(idat_data_crc_ptr, (png.p_IDAT->length)+4);
     printf("new idata crc:%x\n", png.p_IDAT->crc);
-    // remove("./cat_all.png");
     FILE *new_pic = fopen("./cat.png", "wb");
     U64 *initial = 0x0a1a0a0d474e5089;
     U32 *ihdr_len = 0x0d000000;
     fwrite(&initial, 8, 1, new_pic);
     fwrite(&ihdr_len, 4, 1, new_pic);
-    // for(i=0;i<4;++i){
-    //     printf("ihdr type: %x\n", (png.p_IDAT->type)[i]);
-    // }
+
     fwrite(&(png.p_IHDR->type), 4, 1, new_pic);
     fwrite(png.p_IHDR->p_data, 13, 1, new_pic);
     U32 *ihdr_crc = ntohl(png.p_IHDR->crc);
@@ -573,7 +500,6 @@ int parent_catpng(U8 *array, struct int_stack *infstack, U64 *dest_len_total){
     fwrite(&iend_len, 4, 1, new_pic);
     fwrite(&iend_hardcoded,8,1,new_pic);
     fclose(new_pic);
-    // free(def_result_ptr);
 
     return 0;
 }
