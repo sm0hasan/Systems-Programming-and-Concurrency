@@ -5,8 +5,8 @@ LDFLAGS = -std=c99 -g
 LDLIBS = -lz -lcurl 
 
 LIB_UTIL = png_util/crc.o png_util/lab_png.h png_util/zutil.o
-SRCS   = test_lab3.c #main_write_callback.c zutil.c crc.c catpng.c shm_stack.c
-OBJS1  = test_lab3.o $(LIB_UTIL)
+SRCS   = paster2.c #main_write_callback.c zutil.c crc.c catpng.c shm_stack.c
+OBJS1  = paster2.o $(LIB_UTIL)
 TARGETS= paster2
 
 all: ${TARGETS}

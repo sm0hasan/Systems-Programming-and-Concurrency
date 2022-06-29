@@ -642,7 +642,7 @@ simple_PNG_p get_image_thread(U8 *readed_files[]){
     k = 0;
     for(i=16; i<29; ++i){ //ihdr data chunk
         chunk_ihdr[k] = chunk_ptr[i];
-        printf("ntohl_chunk[%d]: %x\n",k,png.p_IHDR->p_data[k]);
+        //printf("ntohl_chunk[%d]: %x\n",k,png.p_IHDR->p_data[k]);
         ++k;
     }
     ihdr.crc = (chunk_ptr[29]<<24) + (chunk_ptr[30]<<16) + (chunk_ptr[31]<<8) + (chunk_ptr[32]);

@@ -16,7 +16,7 @@
 #include <semaphore.h>
 #include "shm_stack.h"
 
-#define STACK_SIZE 3
+#define STACK_SIZE 50
 void push_all(struct int_stack *p, int start);
 void pop_all(struct int_stack *p);
 void test_local();
@@ -137,10 +137,10 @@ void test_shm()
     
 }
 
-int main()
-{
-    test_local();
-    test_shm();
-    return 0;
+// int main()
+// {
+//     test_local();
+//     test_shm();
+//     return 0;
 
-}
+// }
