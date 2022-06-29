@@ -36,8 +36,8 @@
 #define BUF_SIZE 1048576  /* 1024*1024 = 1M */
 #define BUF_INC  524288   /* 1024*512  = 0.5M */
 #define NUM_OF_ELEMS 50
-#define NUM_CHILD 20
-#define STACK_SIZE 10
+#define NUM_CHILD 8
+#define STACK_SIZE 4
 #define NUM_SEMS 4
 #define SLEEP 200
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER; 
@@ -74,8 +74,8 @@ int main( int argc, char* argv[] ) {
     int i=0;
     int k=0;
     int buffer_size = 2;
-    int num_producers = 10;
-    int num_consumers = 10;
+    int num_producers = 4;
+    int num_consumers = 4;
     int sleep = 10;
     int image = 1;
     int parray[num_producers];
