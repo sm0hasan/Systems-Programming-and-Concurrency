@@ -17,17 +17,17 @@
 #include <sys/shm.h>
 //#include "cURL/main_write_header_cb.c"
 // #include "/home/sm8hasan/G_202_10/lab1/starter/png_util/lab_png.h"
-#include "png_util/lab_png.h"
-#include "png_util/crc.h"
-#include "png_util/zutil.h"
+#include "starter/png_util/lab_png.h"
+#include "starter/png_util/crc.c"
+#include "starter/png_util/zutil.c"
 #include <pthread.h>
-#include "cURL_IPC/main.c"
-#include "shm/shm_stack.c"
+#include "starter/cURL_IPC/main.c"
+#include "starter/shm/shm_stack.c"
 // #include "shm/shm_struct.c"
 // #include "cURL/main_write_header_cb.c"
-#include "png_util/lab_png.h"
-#include "png_util/crc.h"
-#include "png_util/zutil.h"
+#include "starter/png_util/lab_png.h"
+#include "starter/png_util/crc.h"
+#include "starter/png_util/zutil.h"
 #include <semaphore.h>
 #include <signal.h>
 
@@ -477,7 +477,7 @@ int parent_catpng(U8 *array, struct int_stack *infstack, U64 *dest_len_total){
     idat_data_crc_ptr = idat_data_crc;
     png.p_IDAT->crc = crc(idat_data_crc_ptr, (png.p_IDAT->length)+4);
     //printf("new idata crc:%x\n", png.p_IDAT->crc);
-    FILE *new_pic = fopen("./cat.png", "wb");
+    FILE *new_pic = fopen("./all.png", "wb");
     U64 *initial = 0x0a1a0a0d474e5089;
     U32 *ihdr_len = 0x0d000000;
     fwrite(&initial, 8, 1, new_pic);

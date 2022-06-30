@@ -1,0 +1,9 @@
+{
+    "makefile.extensionOutputFolder": "./.vscode",
+    "files.associations": {
+        "pthread.h": "c",
+        "lab_png.h": "c",
+        "crc.h": "c",
+        "zutil.h": "c"
+    }
+}
