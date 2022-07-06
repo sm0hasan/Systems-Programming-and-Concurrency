@@ -1,9 +1,4 @@
-/*
- * To use paster you can try pasting in the terminal, "./paster -t 10 -n 3".
- * This is where -t signifies the number of threads and -n signifies which image to be used.
- */
-
-//Libraries
+// Libraries
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,7 +15,7 @@
 #include <pthread.h>
 #include <search.h>
 
-#include "starter/curl_xml/main.c"
+#include "curl_xml/main.c"
 
 // #include "starter/png_util/lab_png.h"
 // #include "starter/png_util/crc.c"
@@ -46,30 +41,28 @@ pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 //Global Varibales
 int server_counter = 0;
 int NumberOfElements = 0;
-//Arrays
-U8 *strip_set[50];
-// int test = 10;
-struct strip_arr arr_of_each_strip;
-struct strip_arr arr_of_each_inf;
-//sems declaration
 
+// Stack
+U8 *strip_set[50];
+
+// Hash Table
+
+// Array
+
+// Function Declarations
+void pipeline();
+int url_checker();
+int response_type();
 
 
 int main( int argc, char* argv[] ) {
-
-    if (argc != 1) {
-		char * tmp = argv[1];
-        strcpy(init_url, tmp); 
-    } else {
-		char * tmp = SEED_URL; 
-        strcpy(init_url, tmp); 
-    }
 
     //Parse command line options
     int c;
     int num_threads = 1;
     int find_num = 50;
     int logfile = 0;
+    char url[256];
     char *str = "option requires an argument";
     
     while ((c = getopt (argc, argv, "t:n:v:")) != -1) {
@@ -92,42 +85,119 @@ int main( int argc, char* argv[] ) {
             break;
         case 'v':
             find_num = optarg
-	        // printf("option -m specifies a value of %d.\n", find_num);
-            if (find_num == "" ) { 
-                fprintf(stderr, "missing file");
-                return -1;
-            }
             break;
         default:
             return -1;
         }
     }
-    if (argc - optind < 6) {
-        fprintf(stderr, "%s: too few arguments\n", argv[0]);
-        usage(argv[0]);
+    strcpy(url, argv[optind]);
+
+    // Initialize
+
+
+
+
+    return 0;
+}
+
+/**
+ * @brief thread function for pipelining
+ * @param url takes in the url from main
+ */
+
+void pipeline() { 
+
+    int check_url;
+    int check_rt;
+    check_url = url_checker();
+    if (check_url == 0) {
+        check_rt = response_type();
+        if (check_rt == 0){ // success
+            // move to next url
+            // if (no next url || max # of png urls have been found) {
+            //    if (no threads are processing an url){
+            //        terminate
+            //    }
+            // }
+            // call pipeline recursively with new url 
+        }
+        else if (check_rt == 1){ // bad response
+            // move to next url
+            // if (no next url || max # of png urls have been found) {
+            //    if (no threads are processing an url){
+            //        terminate
+            //    }
+            // }
+            // call pipeline recursively with new url  
+        }
+    }
+    else if (check_url == 1){
+        // move to next url
+        // if (no next url || max # of png urls have been found) {
+        //    if (no threads are processing an url){
+        //        terminate
+        //    }
+        // }
+        // call pipeline recursively with new url 
     }
 
-    //put seed url onto URL Frontiers
-
-    // Thread 1 - function pipeline
-        // takes from URL frontiers
-        // check if url exists already through the hash table
-        // If not
-            // then add it to the table
-            // send request and check response
-            // Error check resopnse
-            // If 2xx or 3xx
-                // check type field
-                // If HTML Page
-                    // Collect URLs and add to frontier
-                // Else PNG
-                    // Check PNG Header
-                    // Add to png url list
-            // Else 4xx or 5xx
-                // Move to next URL
-        // if so
-            // then go to next url
-
-    // make sure to check if stack empty before trying to move to next url
-
+    return 0;
 }
+
+/**
+ * @brief checks if in url_visited, adds to url_visited if not there
+ * @param url takes in the url from main
+ * @param const char *url is the target url to fetch resoruce
+ * @return returns 0 on success, 1 on url_visited already, 2 on error
+ */
+
+int url_checker() {
+
+    //take in url
+
+    // Search hash table
+    // If exists
+        // return 1
+    // Else If does not exist
+        // return 0
+    // Else
+        // return 2
+
+    return 0;
+}
+
+/**
+ * @brief sends request, checks response, cehsk type of field, collects urls and checks pngs
+ * @param url takes in url for curl operations
+ * @return returns 0 on success, 1 no operation on response, 2 on error
+ */
+
+int response_type() {
+
+    // take in url
+    
+    // send request
+    
+    //check response
+
+    //Error check
+    // If response HTTP/1.1 5XX || HTTP/1.1 4XX
+        // return 1
+    // Else if response HTTP/1.1 3XX
+        // feed the 'curl_easy_setopt' with the 'CURLOPT_FOLLOWLOCATION'
+        // AND THE 'CURLOPT_MAXREDIRS' allows us to specify the # of redirects
+    // Else if response HTTP/1.1 2XX
+        // check the type of field
+        // If HTML Page
+            // Collect the urls and add to frontier
+            // return 0
+        // Else if PNG
+            // Check Png header (need to download)
+            // add to png url list
+            // return 0
+
+
+    return 0;
+}
+
+
