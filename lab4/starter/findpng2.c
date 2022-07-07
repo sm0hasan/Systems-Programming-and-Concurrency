@@ -14,6 +14,7 @@
 #include <signal.h>
 #include <pthread.h>
 #include <search.h>
+#include "stack.h"
 
 #include "curl_xml/main.c"
 
@@ -31,11 +32,11 @@
 #define ECE252_HEADER "X-Ece252-Fragment: "
 #define BUF_SIZE 1048576  /* 1024*1024 = 1M */
 #define BUF_INC  524288   /* 1024*512  = 0.5M */
-#define NUM_OF_ELEMS 50
-#define NUM_CHILD 20 // P+C
-#define STACK_SIZE 10 //B
+
+#define NUM_OF_ELEMS 50 
+#define STACK_SIZE 10 
 #define NUM_SEMS 4
-#define SLEEP 200 //X
+
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER; 
 
 //Global Varibales
@@ -43,16 +44,15 @@ int server_counter = 0;
 int NumberOfElements = 0;
 
 // Stack
-U8 *strip_set[50];
-
-// Hash Table
+struct int_stack *frontier;
 
 // Array
+U8 png_list[50]
 
 // Function Declarations
-void pipeline();
-int url_checker();
-int response_type();
+void pipeline(const char *url);
+int url_checker(const char *url);
+int response_type(const char *url);
 
 
 int main( int argc, char* argv[] ) {
@@ -93,7 +93,20 @@ int main( int argc, char* argv[] ) {
     strcpy(url, argv[optind]);
 
     // Initialize
+    
+    // Stack - frontier
+    if ( (frontier = create_stack(STACK_SIZE)) == NULL) {
+        fprintf(stderr, "Failed to create a new stack, abort...\n");
+        abort();
+    };
 
+    // Hash table - url_visited
+    hcreate(10000);
+
+    // pthread
+    pthread_t thread_id;
+    pthread_create(&thread_id, NULL, pipeline, NULL);
+    pthread_join(thread_id, NULL);
 
 
 
@@ -105,7 +118,7 @@ int main( int argc, char* argv[] ) {
  * @param url takes in the url from main
  */
 
-void pipeline() { 
+void pipeline(const char *url) { 
 
     int check_url;
     int check_rt;
