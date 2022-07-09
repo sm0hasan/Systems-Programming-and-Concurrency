@@ -1,5 +1,5 @@
-# Makefile, ECE252  
-# Yiqing Huang <yqhuang@uwaterloo.ca>
+# # Makefile, ECE252  
+# # Yiqing Huang <yqhuang@uwaterloo.ca>
 
 CC = gcc 
 CFLAGS_XML2 = $(shell xml2-config --cflags)
@@ -31,3 +31,36 @@ findpng2.out: $(OBJS3)
 .PHONY: clean
 clean:
 	rm -f *~ *.d *.o $(TARGETS) *.png *.html
+
+
+
+# CC = gcc       # compiler
+# CFLAGS = -Wall -g # compilation flg 
+# LD = gcc       # linker
+# LDFLAGS = -g   # debugging symbols in build
+# LDLIBS =       # link with libz
+
+# # For students 
+# LIB_UTIL = 
+# SRCS   = stack.c stack_test.c
+# OBJS1  = $(LIB_UTIL) 
+# OBJS2  = stack_test.c stack.o $(LIB_UTIL) 
+
+# TARGETS= stack_test.out
+
+# all: ${TARGETS}
+
+# stack_test.out: $(OBJS2) 
+# 	$(LD) -o $@ $^ $(LDLIBS) $(LDFLAGS) 
+
+# %.o: %.c 
+# 	$(CC) $(CFLAGS) -c $< 
+
+# %.d: %.c
+# 	gcc -MM -MF $@ $<
+
+# -include $(SRCS:.c=.d)
+
+# .PHONY: clean
+# clean:
+# 	rm -f *.d *.o *~ $(TARGETS) 
