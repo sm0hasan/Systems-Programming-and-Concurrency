@@ -11,15 +11,13 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "stack.h"
-typedef unsigned char U8;
+#include "shm_stack.h"
 
 /* a stack that can hold integers */
 /* Note this structure can be used by shared memory,
    since the items field points to the memory right after it.
    Hence the structure and the data items it holds are in one
    continuous chunk of memory.
-
    The memory layout:
    +===============+
    | size          | 4 bytes
@@ -28,7 +26,7 @@ typedef unsigned char U8;
    +---------------+
    | items         | 8 bytes
    +---------------+
-   | items[0]      | sizeof(struct) stack->items[k] = png_arr[k]
+   | items[0]      | 4 bytes
    +---------------+
    | items[1]      | 4 bytes
    +---------------+
@@ -37,14 +35,11 @@ typedef unsigned char U8;
    | items[size-1] | 4 bytes
    +===============+
 */
-
-
-
 typedef struct int_stack
 {
     int size;               /* the max capacity of the stack */
     int pos;                /* position of last item pushed onto the stack */
-    frontier items;             /* stack of stored integers */
+    char_stack items;             /* stack of stored integers */
 } ISTACK;
 
 /**
@@ -55,9 +50,9 @@ typedef struct int_stack
  *         items points to.
  */
 
-int sizeof_stack(int size)
+int sizeof_shm_stack(int size)
 {
-    return (sizeof(ISTACK) + sizeof(struct frontier) * size);
+    return (sizeof(ISTACK) + sizeof(struct char_stack) * size);
 }
 
 /**
@@ -66,10 +61,10 @@ int sizeof_stack(int size)
  * @param int stack_size max. number of items the stack can hold
  * @return 0 on success; non-zero on failure
  * NOTE:
- * The caller first calls sizeof_stack() to allocate enough memory;
- * then calls the init_stack to initialize the struct
+ * The caller first calls sizeof_shm_stack() to allocate enough memory;
+ * then calls the init_shm_stack to initialize the struct
  */
-int init_stack(ISTACK *p, int stack_size)
+int init_shm_stack(ISTACK *p, int stack_size)
 {
     if ( p == NULL || stack_size == 0 ) {
         return 1;
@@ -77,7 +72,7 @@ int init_stack(ISTACK *p, int stack_size)
 
     p->size = stack_size;
     p->pos  = -1;
-    p->items = (frontier) ((char *)p + sizeof(ISTACK));
+    p->items = (int *) ((char *)p + sizeof(ISTACK));
     return 0;
 }
 
@@ -97,14 +92,14 @@ ISTACK *create_stack(int size)
         return NULL;
     }
 
-    mem_size = sizeof_stack(size);
+    mem_size = sizeof_shm_stack(size);
     pstack = malloc(mem_size);
 
     if ( pstack == NULL ) {
         perror("malloc");
     } else {
         char *p = (char *)pstack;
-        pstack->items = (int *) (p + sizeof(ISTACK));
+        pstack->items = (char_stack) (p + sizeof(ISTACK));
         pstack->size = size;
         pstack->pos  = -1;
     }
@@ -159,7 +154,7 @@ int is_empty(ISTACK *p)
  * @return 0 on success; non-zero otherwise
  */
 
-int push(ISTACK *p, struct frontier item)
+int push(ISTACK *p, struct char_stack item)
 {
     if ( p == NULL ) {
         return -1;
@@ -167,7 +162,7 @@ int push(ISTACK *p, struct frontier item)
 
     if ( !is_full(p) ) {
         ++(p->pos);
-        p->items[p->pos] = item; //(struct_p)[int]
+        p->items[p->pos] = item;
         return 0;
     } else {
         return -1;
@@ -182,14 +177,14 @@ int push(ISTACK *p, struct frontier item)
  * @return 0 on success; non-zero otherwise
  */
 
-int pop(ISTACK *p)//, frontier p_item
+int pop(ISTACK *p)
 {
     if ( p == NULL ) {
         return -1;
     }
 
     if ( !is_empty(p) ) {
-        //*p_item = p->items[p->pos];
+        //p_item = &(p->items[p->pos]);
         (p->pos)--;
         return 0;
     } else {

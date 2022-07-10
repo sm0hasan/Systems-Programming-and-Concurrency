@@ -74,7 +74,7 @@ pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 int server_counter = 0;
 int NumberOfElements = 0;
 int keychain = 1;
-int url_num;
+//int url_num;
 
 FRONT frontier;
 
@@ -205,73 +205,73 @@ int process_data(CURL *curl_handle, RECV_BUF *p_recv_buf)
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-int main( int argc, char* argv[] ) {
+// int main( int argc, char* argv[] ) {
 
-    //Parse command line options
-    int c;
-    int num_threads = 1;
-    int find_num = 50;
-    char* v = NULL;
-    int logfile = 0;
-    char url[256];
-    char *str = "option requires an argument";
+//     //Parse command line options
+//     int c;
+//     int num_threads = 1;
+//     int find_num = 50;
+//     char* v = NULL;
+//     int logfile = 0;
+//     char url[256];
+//     char *str = "option requires an argument";
 
-    while ((c = getopt (argc, argv, "t:m:v:")) != -1) {
-        switch (c) {
-        case 't':
-            num_threads = strtoul(optarg, NULL, 10);
-            printf("option -t specifies a value of %d.\n", num_threads);
-            if (num_threads <= 0) {
-                fprintf(stderr, "%s: %s > 0 -- 't'\n", argv[0], str);
-                return -1;
-            }
-            break;
-        case 'm':
-            find_num = strtoul(optarg, NULL, 10);
-	        printf("option -m specifies a value of %d.\n", find_num);
-            if (find_num < 0 ) { 
-                fprintf(stderr, "%s: %s 1, 2, or 3 -- 'n'\n", argv[0], str);
-                return -1;
-            }
-            break;
-        case 'v':
-            v = optarg;
-            break;
-        default:
-            return -1;
-        }
-    }
-    if (optind < argc){
-        strcpy(url, argv[optind]);
-    }
-    else {
-        strcpy(url, SEED_URL);
-    }
-    strcpy(frontier.to_visit[0], url);
-    printf("Url entered: %s\n", url);
+//     while ((c = getopt (argc, argv, "t:m:v:")) != -1) {
+//         switch (c) {
+//         case 't':
+//             num_threads = strtoul(optarg, NULL, 10);
+//             printf("option -t specifies a value of %d.\n", num_threads);
+//             if (num_threads <= 0) {
+//                 fprintf(stderr, "%s: %s > 0 -- 't'\n", argv[0], str);
+//                 return -1;
+//             }
+//             break;
+//         case 'm':
+//             find_num = strtoul(optarg, NULL, 10);
+// 	        printf("option -m specifies a value of %d.\n", find_num);
+//             if (find_num < 0 ) { 
+//                 fprintf(stderr, "%s: %s 1, 2, or 3 -- 'n'\n", argv[0], str);
+//                 return -1;
+//             }
+//             break;
+//         case 'v':
+//             v = optarg;
+//             break;
+//         default:
+//             return -1;
+//         }
+//     }
+//     if (optind < argc){
+//         strcpy(url, argv[optind]);
+//     }
+//     else {
+//         strcpy(url, SEED_URL);
+//     }
+//     strcpy(frontier.to_visit[0], url);
+//     printf("Url entered: %s\n", url);
     
-    hcreate_r(1024, &urls_visited);
+//     hcreate_r(1024, &urls_visited);
 
-    ENTRY e, *ep;
-    e.key = malloc(strlen(frontier.to_visit[frontier.size]) + 1);
-    e.data = "1";
-    strcpy(e.key, frontier.to_visit[frontier.size]);
-    hsearch_r(e, ENTER, &ep, &urls_visited);
-    //hsearch_r(e, FIND, &ep, &urls_visited);
-    printf("Url entered: %s\n", ep->key);
+//     ENTRY e, *ep;
+//     e.key = malloc(strlen(frontier.to_visit[frontier.size]) + 1);
+//     e.data = "1";
+//     strcpy(e.key, frontier.to_visit[frontier.size]);
+//     hsearch_r(e, ENTER, &ep, &urls_visited);
+//     //hsearch_r(e, FIND, &ep, &urls_visited);
+//     printf("Url entered: %s\n", ep->key);
 
-    curl_global_init(CURL_GLOBAL_DEFAULT);
+//     curl_global_init(CURL_GLOBAL_DEFAULT);
 
-    // pthread
-    pthread_t thread_id;
-    pthread_create(&thread_id, NULL, pipeline, NULL);
-    pthread_join(thread_id, NULL);
+//     // pthread
+//     pthread_t thread_id;
+//     pthread_create(&thread_id, NULL, pipeline, NULL);
+//     pthread_join(thread_id, NULL);
 
 
-    //hdestroy_r(&url_visited);
+//     //hdestroy_r(&url_visited);
 
-    return 0;
-}
+//     return 0;
+// }
 
 /**
  * @brief thread function for pipelining
@@ -279,7 +279,8 @@ int main( int argc, char* argv[] ) {
  */
 
 void pipeline() { 
-
+    
+    
     int check_url;
     int check_rt;
     check_url = url_checker(url_num + 1);
