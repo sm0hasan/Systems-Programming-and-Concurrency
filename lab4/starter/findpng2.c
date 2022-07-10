@@ -89,8 +89,8 @@ CURL *easy_handle_init(RECV_BUF *ptr, const char *url);
 int process_data(CURL *curl_handle, RECV_BUF *p_recv_buf);
 int find_http(char *fname, int size, int follow_relative_links, const char *base_url);
 void pipeline();
-int url_checker();
-int response_content();
+int url_checker(int temp_url);
+int response_content(int temp_url);
 
 
 int find_http(char *buf, int size, int follow_relative_links, const char *base_url)
@@ -282,9 +282,10 @@ void pipeline() {
 
     int check_url;
     int check_rt;
-    check_url = url_checker();
+    check_url = url_checker(url_num + 1);
     if (check_url == 0) {
-        check_rt = response_content();
+        url_num += 1;
+        check_rt = response_content(url_num);
         if (check_rt == 0){ // success
             // move to next url
             // if (no next url || max # of png urls have been found) {
@@ -324,17 +325,17 @@ void pipeline() {
  * @return returns 0 on success, 1 on url_visited already, 2 on error
  */
 
-int url_checker() {
+int url_checker(int temp_url) {
 
     ENTRY e, *ep;
     e.key = malloc(strlen(frontier.to_visit[frontier.size]) + 1);
     e.data = (void *) keychain;
     keychain++;
-    strcpy(e.key, frontier.to_visit[url_num]);
-    url_num +=1;
+    strcpy(e.key, frontier.to_visit[temp_url]);
     hsearch_r(e, FIND, &ep, &urls_visited);
 
     if ( ep==NULL){
+        hsearch_r(e, ENTER, &ep, &urls_visited);
         return 0;
     }
     else if(ep == 0){
@@ -353,7 +354,7 @@ int url_checker() {
  * @return returns 0 on success, 1 no operation on response, 2 on error
  */
 
-int response_content() {
+int response_content(int temp_url) {
 
     frontier.to_visit[url_num];
 
