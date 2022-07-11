@@ -70,6 +70,7 @@ int first_url = 1;
 
 FRONT frontier;
 struct int_stack *frontier_stk;
+struct int_stack *png_stk;
 
 // url_visited
 struct hsearch_data *urls_visited = {0};
@@ -83,9 +84,9 @@ int png_list_index=0;
 
 // Function Declarations
 int find_http(char *fname, int size, int follow_relative_links, const char *base_url);
-void pipeline(char *png_list[]);
+void pipeline();
  int url_checker(char url[]);
-int response_content(char url[], char *png_list[]);
+int response_content(char url[]);
 int png_check(unsigned char *buf){
     int a = 0x89;
     int b = 0x50;
@@ -108,7 +109,8 @@ int main( int argc, char* argv[] ) {
     char url[256];
     char *str = "option requires an argument";
     frontier_stk = create_stack(50);
-    char png_list[500][1024] = malloc(sizeof(char)*500*1024);
+    png_stk = create_stack(500);
+    // char png_list[500][1024] = malloc(sizeof(char)*500*1024);
 
 
     while ((c = getopt (argc, argv, "t:m:v:")) != -1) {
@@ -158,11 +160,13 @@ int main( int argc, char* argv[] ) {
     strcpy(char_stk.char_list, url);
     push(frontier_stk, char_stk);
     printf("is empty%d\n", is_empty(frontier_stk));
-    pipeline(png_list);
+    pipeline();
     int i = 0;
-    for(i;i<50;i++){
-        printf("png_list[%d]: %s\n", i, png_list[i]);
+    printf("png_stk.pos: %d\n", png_stk->pos);
+    for(i;i<=png_stk->pos;i++){
+        printf("png_list[%d]: %s\n", i, (png_stk->items[(png_stk->pos)-i]).char_list);
     }
+    
 
     // int ret;
     // ret = response_content(url);
@@ -217,7 +221,7 @@ int main( int argc, char* argv[] ) {
  * @param url takes in the url from main
  */
 
-void pipeline(char *png_list[]) { 
+void pipeline() { 
     
     int check_url;
     int check_rt;
@@ -226,13 +230,13 @@ void pipeline(char *png_list[]) {
     while (is_empty(frontier_stk) == 0){
         char url[256];
         strcpy(url, (frontier_stk->items[frontier_stk->pos]).char_list);
-        printf("url_current: %s\n", url);
+        //printf("url_current: %s\n", url);
         pop(frontier_stk);
         check_url = url_checker(url);
-        printf("After url_checker\n");
+        //printf("After url_checker\n");
         if (check_url == 0) {
-            check_rt = response_content(url, png_list);
-            printf("After resposne_content\n");
+            check_rt = response_content(url);
+            //printf("After resposne_content\n");
             if (check_rt == 0){ // success
                 return_status = 0;
             }
@@ -253,7 +257,7 @@ int url_checker(char *url) {
         first_url = 0;
         return 0;
     }
-    printf("Entered url_checker\n");
+    //printf("Entered url_checker\n");
     ENTRY e, *ep;
 
     e.key = malloc(sizeof(char)*256);
@@ -263,8 +267,8 @@ int url_checker(char *url) {
     strcpy(e.key, url);
     
     hsearch_r(e, FIND, &ep, &urls_visited);
-    printf("url_visited in hash: %s\n", e.key);
-    printf("Url finding: %s\n", e.key);
+    //printf("url_visited in hash: %s\n", e.key);
+    //printf("Url finding: %s\n", e.key);
 
     if ( ep==NULL){
         hsearch_r(e, ENTER, &ep, &urls_visited); //not there
@@ -280,8 +284,8 @@ int url_checker(char *url) {
     return 0;
 }
 
-int response_content(char url[], char *png_list[]) {
-    printf("Entered response_content\n");
+int response_content(char url[]) {
+    //printf("Entered response_content\n");
     CURL *curl_handle;
     CURLcode res;
     RECV_BUF recv_buf;
@@ -290,16 +294,17 @@ int response_content(char url[], char *png_list[]) {
     curl_handle = easy_handle_init(&recv_buf, url);
     res = curl_easy_perform(curl_handle);
     ret = process_data(curl_handle, &recv_buf);
-    printf("png_url_index: %d\n", png_list_index);
+    //printf("png_url_index: %d\n", png_list_index);
     if(png_check(recv_buf.buf)){
-        strcpy(png_list[png_list_index], url);
-        printf("str cpy success\n");
-        png_list_index += 1;
+        struct char_stack png_url;
+        strcpy(png_url.char_list, url);
+        push(png_stk, png_url);
+        //printf("str cpy success\n");
     }
     cleanup(curl_handle, &recv_buf);
 
     if (ret == 1 || ret == 0){
-        printf("response bad or sucsess\n");
+        //printf("response bad or sucsess\n");
         return 0;
     }
     else if (ret == 2){

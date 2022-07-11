@@ -10,7 +10,7 @@
 
 struct int_stack;
 typedef struct char_stack{
-    char char_list[256];
+    unsigned char char_list[256];
 }*char_stack;
 typedef unsigned char U8;
 typedef unsigned int  U32;
