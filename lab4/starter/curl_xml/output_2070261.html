@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head> 
+<meta charset="utf-8" />
+<meta http-equiv="Content-type" content="text/html; charset=utf-8" />
+<style>
+    table, th, td {
+        border: 1px solid black;
+        border-collapse: collapse;
+    }
+    th, td {
+        padding: 15px;
+    }
+    th {
+        text-align: left;
+    }
+</style>
+</head>
+
+<title> ECE252 Lab4/5 Seed Page </title>
+
+<body>
+<h3 id="top">ECE252 Lab4 and Lab5: A tiny concurrent web crawler to search png segments</h3>
+<p>Search this site, click <a href="http://ece252-1.uwaterloo.ca/~yqhuang/lab4/sub1/index.html">here</a> or 
+<a href="http://ece252-1.uwaterloo.ca:2540/image?q=gAAAAABdHkoqPlVGPQPMpFG8Vjvrodu_pZqXMC4jGRiLcYwY6MkhhFG1m5a3x5ZYDOiLGFmz8FTbq3sAva7QKiXY5YNIxrBdxg==">here</a><br>
+</p>
+<ul>
+    <li> <a href="http://ece252-3.uwaterloo.ca:2540/image?q=gAAAAABdHkoqOKR-cFRCkiCUBEMAAAWfDvBFlRisL9ysLWHYHbcQbn1b28PV_uHBZ0gJf5bvzrnf1HNXxB6KRlAVETwTIqBH2Q==">A valid PNG link</a> </li>	    
+
+    <li> <a href="http://ece252-1.uwaterloo.ca:2531/image?img=1&part=0">A broken link</a> </li>
+    <li> <a href="imgs/Disguise.png">A fake PNG img</a> </li>
+</ul>
+Here is a list of images not in PNG format:
+<div>
+<ul>
+    <li> <a href="imgs/crawler_arch.jpg">General web crawler architecture from wikipedia</a> </li>
+    <li> <a href="imgs/para.jpg">Concurrent, Parallel and Asnychronous</a> </li>
+    Here are some web pages in a nested list environment:
+    <ul>
+        <li> <a href="http://ece252-1.uwaterloo.ca/lab4">ECE252 Lab4 Seed Page</a> </li>
+	<li> <a href="http://ece252-1.uwaterloo.ca:2540/image?q=gAAAAABdHkoqPlVGPQPMpFG8Vjvrodu_pZqXMC4jGRiLcYwY6MkhhFG1m5a3x5ZYDOiLGFmz8FTbq3sAva7QKiXY5YNIxrBdxg==">ECE252 Lab4 Seed Page 2</a> </li>
+    </ul>
+    <li> <a href="imgs/cpp.jpg">Missing cpp...</a></li>
+</ul>
+</div>
+<div>
+These are some href links that does not start with http:
+<table styel="width:100%">
+    <tr>
+        <th> Types </th>
+        <th> Description </th>
+        <th> Examples </th>
+    </tr>
+    <tr>
+        <td>#</td>
+        <td>An element within a specified id within a page</a></td>
+        <td><a href="#top">Go to top</td>
+    </tr>
+    <tr>
+        <td>mailto:</td>
+        <td>email address</td>
+        <td><a href="mailto:any@any.com?Subject=Hello%20World!">Send mail!</a></td>
+    </tr>
+    <tr>
+        <td>javascript</td>
+        <td>JavaScript</td>
+        <td><a href="javascript:alert('Hello World!');">Execute JavaScript</a></td>
+    </tr>
+</table>
+</div>
+</body>
+
+</html>

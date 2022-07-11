@@ -66,6 +66,7 @@ int server_counter = 0;
 int NumberOfElements = 0;
 int keychain = 1;
 int url_num;
+int first_url = 1;
 
 FRONT frontier;
 struct int_stack *frontier_stk;
@@ -74,15 +75,27 @@ struct int_stack *frontier_stk;
 struct hsearch_data *urls_visited = {0};
 
 // Array
-char png_list[500][256];
+// char png_list[500][1024];
+// png_list[0] = malloc(sizeof(char)*1024*500);
+int png_list_index=0;
 
 // Function Declarations
 
 // Function Declarations
 int find_http(char *fname, int size, int follow_relative_links, const char *base_url);
-void pipeline();
-int url_checker(int temp_url);
-int response_content(int temp_url);
+void pipeline(char *png_list[]);
+ int url_checker(char url[]);
+int response_content(char url[], char *png_list[]);
+int png_check(unsigned char *buf){
+    int a = 0x89;
+    int b = 0x50;
+    int c = 0x4e;
+    int d = 0x47;
+    if(buf[0] == a && buf[1] == b && buf[2] == c && buf[3] == d){
+        return 1;
+    }
+    return 0;
+}
 
 int main( int argc, char* argv[] ) {
 
@@ -95,6 +108,7 @@ int main( int argc, char* argv[] ) {
     char url[256];
     char *str = "option requires an argument";
     frontier_stk = create_stack(50);
+    char png_list[500][1024] = malloc(sizeof(char)*500*1024);
 
 
     while ((c = getopt (argc, argv, "t:m:v:")) != -1) {
@@ -129,8 +143,48 @@ int main( int argc, char* argv[] ) {
     else {
         strcpy(url, SEED_URL);
     }
-    url_num = 0;
-    strcpy(frontier.to_visit[url_num], url);
+
+    // URLs Visited
+    hcreate_r(1024, &urls_visited);
+    ENTRY e, *ep;
+    e.key = malloc(sizeof(char)*256);
+    strcpy(e.key, url);
+    hsearch_r(e, ENTER, &ep, &urls_visited);  
+    printf("SEED URL Entered: %s\n", ep->key);
+
+
+    // Stack
+    struct char_stack char_stk;
+    strcpy(char_stk.char_list, url);
+    push(frontier_stk, char_stk);
+    printf("is empty%d\n", is_empty(frontier_stk));
+    pipeline(png_list);
+    int i = 0;
+    for(i;i<50;i++){
+        printf("png_list[%d]: %s\n", i, png_list[i]);
+    }
+
+    // int ret;
+    // ret = response_content(url);
+    // // ret = 0;
+
+    // hcreate_r(1024, &urls_visited);
+
+    // ENTRY e, *ep;
+    // e.key = malloc(sizeof(char)*256);
+    // // e.data = (void *) keychain;
+    // // keychain++;
+    // //e.data = "1";
+    // strcpy(e.key, url);
+    // hsearch_r(e, ENTER, &ep, &urls_visited);  
+    // printf("Url entered: %s\n", ep->key);
+
+    // int checker;
+    // checker = url_checker(url);
+
+    // printf("CHECKER: %d", checker);
+/*
+    //strcpy(frontier.to_visit[url_num], url);
     // struct char_stack item;
     // struct char_stack item2;
     // strcpy(item.char_list, url);
@@ -153,56 +207,108 @@ int main( int argc, char* argv[] ) {
 
 
     //hdestroy_r(&url_visited);
-
+    */
     return 0;
 }
+
 
 /**
  * @brief thread function for pipelining
  * @param url takes in the url from main
  */
 
-void pipeline() { 
+void pipeline(char *png_list[]) { 
     
-    
+    int check_url;
     int check_rt;
-    check_rt = response_content(url_num);
+    int return_status;
+    printf("Entered pipeline\n");
+    while (is_empty(frontier_stk) == 0){
+        char url[256];
+        strcpy(url, (frontier_stk->items[frontier_stk->pos]).char_list);
+        printf("url_current: %s\n", url);
+        pop(frontier_stk);
+        check_url = url_checker(url);
+        printf("After url_checker\n");
+        if (check_url == 0) {
+            check_rt = response_content(url, png_list);
+            printf("After resposne_content\n");
+            if (check_rt == 0){ // success
+                return_status = 0;
+            }
+            else if (check_rt == 1){ // bad response
+                return_status = 1;
+            }
+        }
+        else if (check_url == 1){ // aready there
+            return_status = 1;
+        }
+    }
+
+    return return_status;
+}
+
+int url_checker(char *url) {
+    if (first_url == 1){
+        first_url = 0;
+        return 0;
+    }
+    printf("Entered url_checker\n");
+    ENTRY e, *ep;
+
+    e.key = malloc(sizeof(char)*256);
+    // e.data = (void *) keychain;
+    // keychain++;
+    
+    strcpy(e.key, url);
+    
+    hsearch_r(e, FIND, &ep, &urls_visited);
+    printf("url_visited in hash: %s\n", e.key);
+    printf("Url finding: %s\n", e.key);
+
+    if ( ep==NULL){
+        hsearch_r(e, ENTER, &ep, &urls_visited); //not there
+        return 0;
+    }
+    else if(ep != 0){ // already there
+        return 1;
+    }
+    else {
+        return 2; // error
+    }
 
     return 0;
 }
 
-int response_content(int temp_url) {
-
-    frontier.to_visit[url_num];
-
+int response_content(char url[], char *png_list[]) {
+    printf("Entered response_content\n");
     CURL *curl_handle;
     CURLcode res;
     RECV_BUF recv_buf;
-    char url[256];
     int ret;
-    strcpy(url, frontier.to_visit[url_num]);
+
     curl_handle = easy_handle_init(&recv_buf, url);
     res = curl_easy_perform(curl_handle);
     ret = process_data(curl_handle, &recv_buf);
-
+    printf("png_url_index: %d\n", png_list_index);
+    if(png_check(recv_buf.buf)){
+        strcpy(png_list[png_list_index], url);
+        printf("str cpy success\n");
+        png_list_index += 1;
+    }
     cleanup(curl_handle, &recv_buf);
 
-    if (ret == 1 || ret == 0){ // 1 = response messed up - 0 means success
-        printf("response bad or sucsess\n");// move to next url // recursively call pipeline??
+    if (ret == 1 || ret == 0){
+        printf("response bad or sucsess\n");
+        return 0;
     }
     else if (ret == 2){
         printf("erorr occured\n");
-        // error happened, move to next url???????
+        return 1;
     }
 
-
-    return 0;
+    return 1;
 }
-
-
-
-
-
 
 
 
@@ -235,12 +341,10 @@ int find_http(char *buf, int size, int follow_relative_links, const char *base_u
             }
             if ( href != NULL && !strncmp((const char *)href, "http", 4) ) {
                 // printf("href: %s\n", href);
-                strcpy(frontier.to_visit[index_val], href);
                 struct char_stack char_stk;
                 strcpy(char_stk.char_list, href);
                 push(frontier_stk, char_stk);
                 printf("The Frontier stored URL is : %s\n", (frontier_stk->items[frontier_stk->pos]).char_list);
-                index_val += 1;
             }
             xmlFree(href);
         }
@@ -250,3 +354,8 @@ int find_http(char *buf, int size, int follow_relative_links, const char *base_u
     xmlCleanupParser();
     return 0;
 }
+
+
+
+
+
