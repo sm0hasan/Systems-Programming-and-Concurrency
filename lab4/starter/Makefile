@@ -9,7 +9,7 @@ LD = gcc
 LDFLAGS = -std=gnu99 -g 
 LDLIBS_XML2 = $(shell xml2-config --libs)
 LDLIBS_CURL = $(shell curl-config --libs)
-LDLIBS = $(LDLIBS_XML2) $(LDLIBS_CURL) 
+LDLIBS = $(LDLIBS_XML2) $(LDLIBS_CURL) -pthread
 
 SRCS   = png.c
 OBJS3  = png.o

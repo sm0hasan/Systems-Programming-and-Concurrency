@@ -390,7 +390,7 @@ int process_png(CURL *curl_handle, RECV_BUF *p_recv_buf)
     }
 
     sprintf(fname, "./output_%d_%d.png", p_recv_buf->seq, pid);
-    write_file(fname, p_recv_buf->buf, p_recv_buf->size);
+    //write_file(fname, p_recv_buf->buf, p_recv_buf->size);
     return 0; //write_file(fname, p_recv_buf->buf, p_recv_buf->size);
 }
 /**

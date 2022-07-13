@@ -59,7 +59,13 @@
        __typeof__ (b) _b = (b); \
      _a > _b ? _a : _b; })
 
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER; 
+pthread_mutex_t frontier_mutex; 
+pthread_mutex_t png_list_mutex;
+pthread_mutex_t hash_mutex;
+pthread_mutex_t check_num;
+
+pthread_cond_t cond_var;
+pthread_cond_t cond_var1;
 
 //Global Varibales
 int server_counter = 0;
@@ -71,6 +77,7 @@ int first_url = 1;
 FRONT frontier;
 struct int_stack *frontier_stk;
 struct int_stack *png_stk;
+struct int_stack *visited_stk;
 
 // url_visited
 struct hsearch_data *urls_visited = {0};
@@ -84,8 +91,67 @@ int png_list_index=0;
 
 // Function Declarations
 int find_http(char *fname, int size, int follow_relative_links, const char *base_url);
-void pipeline();
- int url_checker(char url[]);
+void* pipeline() { 
+    //printf("thread execution\n");
+    int check_url;
+    int check_rt;
+    int return_status;
+    int active = 0;
+    //printf("Entered pipeline\n");
+    pthread_mutex_lock(&frontier_mutex);
+    while(is_empty(frontier_stk)){
+        //printf("stuck in cond_var 1\n");
+        pthread_cond_wait(&cond_var1, &frontier_mutex);
+    }
+    pthread_mutex_unlock(&frontier_mutex);
+    //printf("out of cond_var1\n");
+    while (is_empty(frontier_stk) == 0){
+        pthread_mutex_lock(&frontier_mutex);
+        if(png_stk->pos >= 49){// check whether enough png is found
+            pthread_mutex_unlock(&frontier_mutex);
+            break;
+        }
+        pthread_mutex_unlock(&frontier_mutex);
+        char url[256];
+        strcpy(url, (frontier_stk->items[frontier_stk->pos]).char_list);
+        //printf("url_current: %s\n", url);
+        pthread_mutex_lock(&frontier_mutex);
+        pop(frontier_stk);
+        pthread_mutex_unlock(&frontier_mutex);
+        check_url = url_checker(url);
+        //printf("After url_checker\n");
+        if (check_url == 0) {
+            check_rt = response_content(url);
+            pthread_cond_signal(&cond_var);
+            pthread_cond_signal(&cond_var1);
+            //pthread_cond_broadcast(&cond_var);
+            //printf("After resposne_content\n");
+            if (check_rt == 0){ // success
+                return_status = 0;
+            }
+            else if (check_rt == 1){ // bad response
+                return_status = 1;
+            }
+        }
+        else if (check_url == 1){ // aready there
+            return_status = 1;
+        }
+        pthread_mutex_lock(&frontier_mutex);
+        while(frontier_stk->pos == -1){
+            //printf("fuck==========================================================8\n");
+            if(png_stk->pos >= 49){
+                pthread_mutex_unlock(&frontier_mutex);
+                break;
+            }    
+            pthread_cond_wait(&cond_var, &frontier_mutex); 
+        }
+        pthread_mutex_unlock(&frontier_mutex);
+        //printf("shit bro===================8\n");
+    }
+    printf("thread finished\n");
+    //return return_status;
+}
+int url_checker(char url[]);
 int response_content(char url[]);
 int png_check(unsigned char *buf){
     int a = 0x89;
@@ -99,8 +165,16 @@ int png_check(unsigned char *buf){
 }
 
 int main( int argc, char* argv[] ) {
-
+    xmlInitParser();
+    pthread_t th[8];
+    pthread_mutex_init(&frontier_mutex, NULL);
+    pthread_mutex_init(&png_list_mutex, NULL);
+    pthread_mutex_init(&hash_mutex, NULL);
+    pthread_mutex_init(&check_num, NULL);
+    pthread_cond_init(&cond_var, NULL);
+    pthread_cond_init(&cond_var1, NULL);
     //Parse command line options
+    int i = 0;
     int c;
     int num_threads = 1;
     int find_num = 50;
@@ -108,10 +182,10 @@ int main( int argc, char* argv[] ) {
     int logfile = 0;
     char url[256];
     char *str = "option requires an argument";
-    frontier_stk = create_stack(50);
+    frontier_stk = create_stack(1000);
     png_stk = create_stack(500);
+    visited_stk = create_stack(2000);
     // char png_list[500][1024] = malloc(sizeof(char)*500*1024);
-
 
     while ((c = getopt (argc, argv, "t:m:v:")) != -1) {
         switch (c) {
@@ -155,63 +229,54 @@ int main( int argc, char* argv[] ) {
     printf("SEED URL Entered: %s\n", ep->key);
 
 
-    // Stack
+    // // Stack
     struct char_stack char_stk;
     strcpy(char_stk.char_list, url);
     push(frontier_stk, char_stk);
+    //push(visited_stk, char_stk);
     printf("is empty%d\n", is_empty(frontier_stk));
-    pipeline();
-    int i = 0;
+    //pipeline();
+    /////////Thread Init/////////
+    for(i=0;i<8;i++){
+        if (pthread_create(&th[i], NULL, &pipeline, NULL) != 0){
+            perror("Failed to create thread\n");
+        }
+    }
+    for(i=0;i<8;i++){
+        if(pthread_join(th[i], NULL) != 0){
+            perror("failed to join thread\n");
+        }
+        //sleep(1);
+    }
+
+    /////////////////////////////
+    ///////Testing png_stack/////
     printf("png_stk.pos: %d\n", png_stk->pos);
-    for(i;i<=png_stk->pos;i++){
+    for(i=0;i<=png_stk->pos;i++){
         printf("png_list[%d]: %s\n", i, (png_stk->items[(png_stk->pos)-i]).char_list);
     }
-    
-
-    // int ret;
-    // ret = response_content(url);
-    // // ret = 0;
-
-    // hcreate_r(1024, &urls_visited);
-
-    // ENTRY e, *ep;
-    // e.key = malloc(sizeof(char)*256);
-    // // e.data = (void *) keychain;
-    // // keychain++;
-    // //e.data = "1";
-    // strcpy(e.key, url);
-    // hsearch_r(e, ENTER, &ep, &urls_visited);  
-    // printf("Url entered: %s\n", ep->key);
-
-    // int checker;
-    // checker = url_checker(url);
-
-    // printf("CHECKER: %d", checker);
-/*
-    //strcpy(frontier.to_visit[url_num], url);
-    // struct char_stack item;
-    // struct char_stack item2;
-    // strcpy(item.char_list, url);
-    // push(frontier_stk, item); 
-    // push(frontier_stk, item2); 
-    // // char *p_item;
-    // pop(frontier_stk);
-
-    // printf("Url entered: %s\n", (frontier_stk->items[frontier_stk->pos]).char_list);
-
-    curl_global_init(CURL_GLOBAL_DEFAULT);
-
-    pipeline();
-    pop(frontier_stk);
-    printf("Url entered: %s\n", (frontier_stk->items[frontier_stk->pos]).char_list);
-    // pthread
-    // pthread_t thread_id;
-    // pthread_create(&thread_id, NULL, pipeline, NULL);
-    // pthread_join(thread_id, NULL);
+    for(i=0;i<=visited_stk->pos;i++){
+        printf("visited_list[%d]: %s\n", i, (visited_stk->items[(visited_stk->pos)-i]).char_list);
+    }
 
 
     //hdestroy_r(&url_visited);
-    */
+    
+    pthread_mutex_destroy(&frontier_mutex);
+    pthread_mutex_destroy(&png_list_mutex);
+    pthread_mutex_destroy(&hash_mutex);
+    pthread_mutex_destroy(&check_num);
+    pthread_cond_destroy(&cond_var);
+    pthread_cond_destroy(&cond_var1);
+    //free(v);
+    //free(str);
+    //free(&char_stk);
+    destroy_stack(frontier_stk);
+    destroy_stack(png_stk);
+    destroy_stack(visited_stk);
+    //frontier_stk = NULL;
+    //png_stk = NULL;
+    hdestroy_r(urls_visited);
     return 0;
 }
 
@@ -221,36 +286,7 @@ int main( int argc, char* argv[] ) {
  * @param url takes in the url from main
  */
 
-void pipeline() { 
-    
-    int check_url;
-    int check_rt;
-    int return_status;
-    printf("Entered pipeline\n");
-    while (is_empty(frontier_stk) == 0){
-        char url[256];
-        strcpy(url, (frontier_stk->items[frontier_stk->pos]).char_list);
-        //printf("url_current: %s\n", url);
-        pop(frontier_stk);
-        check_url = url_checker(url);
-        //printf("After url_checker\n");
-        if (check_url == 0) {
-            check_rt = response_content(url);
-            //printf("After resposne_content\n");
-            if (check_rt == 0){ // success
-                return_status = 0;
-            }
-            else if (check_rt == 1){ // bad response
-                return_status = 1;
-            }
-        }
-        else if (check_url == 1){ // aready there
-            return_status = 1;
-        }
-    }
 
-    return return_status;
-}
 
 int url_checker(char *url) {
     if (first_url == 1){
@@ -265,21 +301,28 @@ int url_checker(char *url) {
     // keychain++;
     
     strcpy(e.key, url);
-    
+    pthread_mutex_lock(&hash_mutex);
     hsearch_r(e, FIND, &ep, &urls_visited);
     //printf("url_visited in hash: %s\n", e.key);
     //printf("Url finding: %s\n", e.key);
 
     if ( ep==NULL){
         hsearch_r(e, ENTER, &ep, &urls_visited); //not there
+        struct char_stack char_stk;
+        strcpy(char_stk.char_list, url);
+        push(visited_stk, char_stk);
+        pthread_mutex_unlock(&hash_mutex);
         return 0;
     }
     else if(ep != 0){ // already there
+        pthread_mutex_unlock(&hash_mutex);
         return 1;
     }
     else {
+        pthread_mutex_unlock(&hash_mutex);
         return 2; // error
     }
+    
 
     return 0;
 }
@@ -295,12 +338,14 @@ int response_content(char url[]) {
     res = curl_easy_perform(curl_handle);
     ret = process_data(curl_handle, &recv_buf);
     //printf("png_url_index: %d\n", png_list_index);
+    pthread_mutex_lock(&png_list_mutex);
     if(png_check(recv_buf.buf)){
         struct char_stack png_url;
         strcpy(png_url.char_list, url);
         push(png_stk, png_url);
         //printf("str cpy success\n");
     }
+    pthread_mutex_unlock(&png_list_mutex);
     cleanup(curl_handle, &recv_buf);
 
     if (ret == 1 || ret == 0){
@@ -346,10 +391,13 @@ int find_http(char *buf, int size, int follow_relative_links, const char *base_u
             }
             if ( href != NULL && !strncmp((const char *)href, "http", 4) ) {
                 // printf("href: %s\n", href);
+                pthread_mutex_lock(&frontier_mutex);
                 struct char_stack char_stk;
                 strcpy(char_stk.char_list, href);
                 push(frontier_stk, char_stk);
+                //push(visited_stk, char_stk);
                 printf("The Frontier stored URL is : %s\n", (frontier_stk->items[frontier_stk->pos]).char_list);
+                pthread_mutex_unlock(&frontier_mutex);
             }
             xmlFree(href);
         }

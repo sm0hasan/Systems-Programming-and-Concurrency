@@ -14,12 +14,8 @@
 #include <signal.h>
 #include <pthread.h>
 #include <search.h>
-#include "stack.h"
+#include "shm_stack.c"
 #include <curl/curl.h>
-#include <libxml/HTMLparser.h>
-#include <libxml/parser.h>
-#include <libxml/xpath.h>
-#include <libxml/uri.h>
 
 #include "curl_xml/main.c"
 
@@ -31,22 +27,17 @@
 // #include "starter/png_util/crc.h"
 // #include "starter/png_util/zutil.h"
 
-typedef unsigned char U8;
-typedef unsigned int  U32;
-typedef unsigned long int U64;
 
-typedef struct recv_buf2 {
-    char *buf;       /* memory to hold a copy of received data */
-    size_t size;     /* size of valid data in buf in bytes*/
-    size_t max_size; /* max capacity of buf in bytes*/
-    int seq;         /* >=0 sequence number extracted from http header */
-                     /* <0 indicates an invalid seq number */
-} RECV_BUF;
 
-typedef struct front {
-  char to_visit[10000][256];
-  int size;
-} FRONT;
+// typedef struct recv_buf2 {
+//     char *buf;       /* memory to hold a copy of received data */
+//     size_t size;     /* size of valid data in buf in bytes*/
+//     size_t max_size; /* max capacity of buf in bytes*/
+//     int seq;         /* >=0 sequence number extracted from http header */
+//                      /* <0 indicates an invalid seq number */
+// } RECV_BUF;
+
+
 
 //Defines
 #define SEED_URL "http://ece252-1.uwaterloo.ca/lab4"
@@ -74,23 +65,257 @@ pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 int server_counter = 0;
 int NumberOfElements = 0;
 int keychain = 1;
-//int url_num;
+int url_num;
+int first_url = 1;
 
 FRONT frontier;
+struct int_stack *frontier_stk;
+struct int_stack *png_stk;
 
 // url_visited
 struct hsearch_data *urls_visited = {0};
 
 // Array
-char png_list[500][256];
+// char png_list[500][1024];
+// png_list[0] = malloc(sizeof(char)*1024*500);
+int png_list_index=0;
 
 // Function Declarations
-CURL *easy_handle_init(RECV_BUF *ptr, const char *url);
-int process_data(CURL *curl_handle, RECV_BUF *p_recv_buf);
+
+// Function Declarations
 int find_http(char *fname, int size, int follow_relative_links, const char *base_url);
 void pipeline();
-int url_checker(int temp_url);
-int response_content(int temp_url);
+ int url_checker(char url[]);
+int response_content(char url[]);
+int png_check(unsigned char *buf){
+    int a = 0x89;
+    int b = 0x50;
+    int c = 0x4e;
+    int d = 0x47;
+    if(buf[0] == a && buf[1] == b && buf[2] == c && buf[3] == d){
+        return 1;
+    }
+    return 0;
+}
+
+int main( int argc, char* argv[] ) {
+
+    //Parse command line options
+    int c;
+    int num_threads = 1;
+    int find_num = 50;
+    char* v = NULL;
+    int logfile = 0;
+    char url[256];
+    char *str = "option requires an argument";
+    frontier_stk = create_stack(500);
+    png_stk = create_stack(500);
+    // char png_list[500][1024] = malloc(sizeof(char)*500*1024);
+
+
+    while ((c = getopt (argc, argv, "t:m:v:")) != -1) {
+        switch (c) {
+        case 't':
+            num_threads = strtoul(optarg, NULL, 10);
+            printf("option -t specifies a value of %d.\n", num_threads);
+            if (num_threads <= 0) {
+                fprintf(stderr, "%s: %s > 0 -- 't'\n", argv[0], str);
+                return -1;
+            }
+            break;
+        case 'm':
+            find_num = strtoul(optarg, NULL, 10);
+	        printf("option -m specifies a value of %d.\n", find_num);
+            if (find_num < 0 ) { 
+                fprintf(stderr, "%s: %s 1, 2, or 3 -- 'n'\n", argv[0], str);
+                return -1;
+            }
+            break;
+        case 'v':
+            v = optarg;
+            break;
+        default:
+            return -1;
+    
+    }
+    }
+    if (optind < argc){
+        strcpy(url, argv[optind]);
+    }
+    else {
+        strcpy(url, SEED_URL);
+    }
+
+    // URLs Visited
+    hcreate_r(1024, &urls_visited);
+    ENTRY e, *ep;
+    e.key = malloc(sizeof(char)*256);
+    strcpy(e.key, url);
+    hsearch_r(e, ENTER, &ep, &urls_visited);  
+    printf("SEED URL Entered: %s\n", ep->key);
+
+
+    // Stack
+    struct char_stack char_stk;
+    strcpy(char_stk.char_list, url);
+    push(frontier_stk, char_stk);
+    printf("is empty%d\n", is_empty(frontier_stk));
+    pipeline();
+    int i = 0;
+    printf("png_stk.pos: %d\n", png_stk->pos);
+    for(i;i<=png_stk->pos;i++){
+        printf("png_list[%d]: %s\n", i, (png_stk->items[(png_stk->pos)-i]).char_list);
+    }
+    
+
+    // int ret;
+    // ret = response_content(url);
+    // // ret = 0;
+
+    // hcreate_r(1024, &urls_visited);
+
+    // ENTRY e, *ep;
+    // e.key = malloc(sizeof(char)*256);
+    // // e.data = (void *) keychain;
+    // // keychain++;
+    // //e.data = "1";
+    // strcpy(e.key, url);
+    // hsearch_r(e, ENTER, &ep, &urls_visited);  
+    // printf("Url entered: %s\n", ep->key);
+
+    // int checker;
+    // checker = url_checker(url);
+
+    // printf("CHECKER: %d", checker);
+/*
+    //strcpy(frontier.to_visit[url_num], url);
+    // struct char_stack item;
+    // struct char_stack item2;
+    // strcpy(item.char_list, url);
+    // push(frontier_stk, item); 
+    // push(frontier_stk, item2); 
+    // // char *p_item;
+    // pop(frontier_stk);
+
+    // printf("Url entered: %s\n", (frontier_stk->items[frontier_stk->pos]).char_list);
+
+    curl_global_init(CURL_GLOBAL_DEFAULT);
+
+    pipeline();
+    pop(frontier_stk);
+    printf("Url entered: %s\n", (frontier_stk->items[frontier_stk->pos]).char_list);
+    // pthread
+    // pthread_t thread_id;
+    // pthread_create(&thread_id, NULL, pipeline, NULL);
+    // pthread_join(thread_id, NULL);
+
+
+    //hdestroy_r(&url_visited);
+    */
+    return 0;
+}
+
+
+/**
+ * @brief thread function for pipelining
+ * @param url takes in the url from main
+ */
+
+void pipeline() { 
+    
+    int check_url;
+    int check_rt;
+    int return_status;
+    printf("Entered pipeline\n");
+    while (is_empty(frontier_stk) == 0){
+        char url[256];
+        strcpy(url, (frontier_stk->items[frontier_stk->pos]).char_list);
+        //printf("url_current: %s\n", url);
+        pop(frontier_stk);
+        check_url = url_checker(url);
+        //printf("After url_checker\n");
+        if (check_url == 0) {
+            check_rt = response_content(url);
+            //printf("After resposne_content\n");
+            if (check_rt == 0){ // success
+                return_status = 0;
+            }
+            else if (check_rt == 1){ // bad response
+                return_status = 1;
+            }
+        }
+        else if (check_url == 1){ // aready there
+            return_status = 1;
+        }
+    }
+
+    return return_status;
+}
+
+int url_checker(char *url) {
+    if (first_url == 1){
+        first_url = 0;
+        return 0;
+    }
+    //printf("Entered url_checker\n");
+    ENTRY e, *ep;
+
+    e.key = malloc(sizeof(char)*256);
+    // e.data = (void *) keychain;
+    // keychain++;
+    
+    strcpy(e.key, url);
+    
+    hsearch_r(e, FIND, &ep, &urls_visited);
+    //printf("url_visited in hash: %s\n", e.key);
+    //printf("Url finding: %s\n", e.key);
+
+    if ( ep==NULL){
+        hsearch_r(e, ENTER, &ep, &urls_visited); //not there
+        return 0;
+    }
+    else if(ep != 0){ // already there
+        return 1;
+    }
+    else {
+        return 2; // error
+    }
+
+    return 0;
+}
+
+int response_content(char url[]) {
+    //printf("Entered response_content\n");
+    CURL *curl_handle;
+    CURLcode res;
+    RECV_BUF recv_buf;
+    int ret;
+
+    curl_handle = easy_handle_init(&recv_buf, url);
+    res = curl_easy_perform(curl_handle);
+    ret = process_data(curl_handle, &recv_buf);
+    //printf("png_url_index: %d\n", png_list_index);
+    if(png_check(recv_buf.buf)){
+        struct char_stack png_url;
+        strcpy(png_url.char_list, url);
+        push(png_stk, png_url);
+        //printf("str cpy success\n");
+    }
+    cleanup(curl_handle, &recv_buf);
+
+    if (ret == 1 || ret == 0){
+        //printf("response bad or sucsess\n");
+        return 0;
+    }
+    else if (ret == 2){
+        printf("erorr occured\n");
+        return 1;
+    }
+
+    return 1;
+}
+
+
 
 
 int find_http(char *buf, int size, int follow_relative_links, const char *base_url)
@@ -102,6 +327,7 @@ int find_http(char *buf, int size, int follow_relative_links, const char *base_u
     xmlNodeSetPtr nodeset;
     xmlXPathObjectPtr result;
     xmlChar *href;
+    
 		
     if (buf == NULL) {
         return 1;
@@ -120,8 +346,10 @@ int find_http(char *buf, int size, int follow_relative_links, const char *base_u
             }
             if ( href != NULL && !strncmp((const char *)href, "http", 4) ) {
                 // printf("href: %s\n", href);
-                url_num +=1;
-                strcpy(frontier.to_visit[url_num], href);
+                struct char_stack char_stk;
+                strcpy(char_stk.char_list, href);
+                push(frontier_stk, char_stk);
+                printf("The Frontier stored URL is : %s\n", (frontier_stk->items[frontier_stk->pos]).char_list);
             }
             xmlFree(href);
         }
@@ -131,277 +359,3 @@ int find_http(char *buf, int size, int follow_relative_links, const char *base_u
     xmlCleanupParser();
     return 0;
 }
-
-int process_html(CURL *curl_handle, RECV_BUF *p_recv_buf)
-{
-    char fname[256];
-    int follow_relative_link = 1;
-    char *url = NULL; 
-    pid_t pid =getpid();
-
-    curl_easy_getinfo(curl_handle, CURLINFO_EFFECTIVE_URL, &url);
-    find_http(p_recv_buf->buf, p_recv_buf->size, follow_relative_link, url); 
-    sprintf(fname, "./output_%d.html", pid);
-    return 0; //write_file(fname, p_recv_buf->buf, p_recv_buf->size);
-}
-
-int process_png(CURL *curl_handle, RECV_BUF *p_recv_buf)
-{
-    pid_t pid =getpid();
-    char fname[256];
-    char *eurl = NULL;          /* effective URL */
-    curl_easy_getinfo(curl_handle, CURLINFO_EFFECTIVE_URL, &eurl);
-    if ( eurl != NULL) {
-        printf("The PNG url is: %s\n", eurl);
-    }
-
-    sprintf(fname, "./output_%d_%d.png", p_recv_buf->seq, pid);
-    return 0; //write_file(fname, p_recv_buf->buf, p_recv_buf->size);
-}
-/**
- * @brief process teh download data by curl
- * @param CURL *curl_handle is the curl handler
- * @param RECV_BUF p_recv_buf contains the received data. 
- * @return 0 on success; non-zero otherwise
- */
-
-int process_data(CURL *curl_handle, RECV_BUF *p_recv_buf)
-{
-    CURLcode res;
-    char fname[256];
-    pid_t pid =getpid();
-    long response_code;
-
-    res = curl_easy_getinfo(curl_handle, CURLINFO_RESPONSE_CODE, &response_code);
-    if ( res == CURLE_OK ) {
-	    printf("Response code: %ld\n", response_code);
-    }
-
-    if ( response_code >= 400 ) { 
-    	fprintf(stderr, "Error.\n");
-        return 1;
-    }
-
-    char *ct = NULL;
-    res = curl_easy_getinfo(curl_handle, CURLINFO_CONTENT_TYPE, &ct);
-    if ( res == CURLE_OK && ct != NULL ) {
-    	printf("Content-Type: %s, len=%ld\n", ct, strlen(ct));
-    } else {
-        fprintf(stderr, "Failed obtain Content-Type\n");
-        return 2;
-    }
-
-    if ( strstr(ct, CT_HTML) ) {
-        return process_html(curl_handle, p_recv_buf);
-    } else if ( strstr(ct, CT_PNG) ) {
-        return process_png(curl_handle, p_recv_buf);
-    } else {
-        sprintf(fname, "./output_%d", pid);
-    }
-
-    //return write_file(fname, p_recv_buf->buf, p_recv_buf->size);
-}
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-// int main( int argc, char* argv[] ) {
-
-//     //Parse command line options
-//     int c;
-//     int num_threads = 1;
-//     int find_num = 50;
-//     char* v = NULL;
-//     int logfile = 0;
-//     char url[256];
-//     char *str = "option requires an argument";
-
-//     while ((c = getopt (argc, argv, "t:m:v:")) != -1) {
-//         switch (c) {
-//         case 't':
-//             num_threads = strtoul(optarg, NULL, 10);
-//             printf("option -t specifies a value of %d.\n", num_threads);
-//             if (num_threads <= 0) {
-//                 fprintf(stderr, "%s: %s > 0 -- 't'\n", argv[0], str);
-//                 return -1;
-//             }
-//             break;
-//         case 'm':
-//             find_num = strtoul(optarg, NULL, 10);
-// 	        printf("option -m specifies a value of %d.\n", find_num);
-//             if (find_num < 0 ) { 
-//                 fprintf(stderr, "%s: %s 1, 2, or 3 -- 'n'\n", argv[0], str);
-//                 return -1;
-//             }
-//             break;
-//         case 'v':
-//             v = optarg;
-//             break;
-//         default:
-//             return -1;
-//         }
-//     }
-//     if (optind < argc){
-//         strcpy(url, argv[optind]);
-//     }
-//     else {
-//         strcpy(url, SEED_URL);
-//     }
-//     strcpy(frontier.to_visit[0], url);
-//     printf("Url entered: %s\n", url);
-    
-//     hcreate_r(1024, &urls_visited);
-
-//     ENTRY e, *ep;
-//     e.key = malloc(strlen(frontier.to_visit[frontier.size]) + 1);
-//     e.data = "1";
-//     strcpy(e.key, frontier.to_visit[frontier.size]);
-//     hsearch_r(e, ENTER, &ep, &urls_visited);
-//     //hsearch_r(e, FIND, &ep, &urls_visited);
-//     printf("Url entered: %s\n", ep->key);
-
-//     curl_global_init(CURL_GLOBAL_DEFAULT);
-
-//     // pthread
-//     pthread_t thread_id;
-//     pthread_create(&thread_id, NULL, pipeline, NULL);
-//     pthread_join(thread_id, NULL);
-
-
-//     //hdestroy_r(&url_visited);
-
-//     return 0;
-// }
-
-/**
- * @brief thread function for pipelining
- * @param url takes in the url from main
- */
-
-void pipeline() { 
-    
-    
-    int check_url;
-    int check_rt;
-    check_url = url_checker(url_num + 1);
-    if (check_url == 0) {
-        url_num += 1;
-        check_rt = response_content(url_num);
-        if (check_rt == 0){ // success
-            // move to next url
-            // if (no next url || max # of png urls have been found) {
-            //    if (no threads are processing an url){
-            //        terminate
-            //    }
-            // }
-            // call pipeline recursively with new url 
-        }
-        else if (check_rt == 1){ // bad response
-            // move to next url
-            // if (no next url || max # of png urls have been found) {
-            //    if (no threads are processing an url){
-            //        terminate
-            //    }
-            // }
-            // call pipeline recursively with new url  
-        }
-    }
-    else if (check_url == 1){
-        // move to next url
-        // if (no next url || max # of png urls have been found) {
-        //    if (no threads are processing an url){
-        //        terminate
-        //    }
-        // }
-        // call pipeline recursively with new url 
-    }
-
-    return 0;
-}
-
-/**
- * @brief checks if in url_visited, adds to url_visited if not there
- * @param url takes in the url from main
- * @param const char *url is the target url to fetch resoruce
- * @return returns 0 on success, 1 on url_visited already, 2 on error
- */
-
-int url_checker(int temp_url) {
-
-    ENTRY e, *ep;
-    e.key = malloc(strlen(frontier.to_visit[frontier.size]) + 1);
-    e.data = (void *) keychain;
-    keychain++;
-    strcpy(e.key, frontier.to_visit[temp_url]);
-    hsearch_r(e, FIND, &ep, &urls_visited);
-
-    if ( ep==NULL){
-        hsearch_r(e, ENTER, &ep, &urls_visited);
-        return 0;
-    }
-    else if(ep == 0){
-        return 1;
-    }
-    else {
-        return 2;
-    }
-
-    return 0;
-}
-
-/**
- * @brief sends request, checks response, cehsk type of field, collects urls and checks pngs
- * @param url takes in url for curl operations
- * @return returns 0 on success, 1 no operation on response, 2 on error
- */
-
-int response_content(int temp_url) {
-
-    frontier.to_visit[url_num];
-
-    CURL *curl_handle;
-    CURLcode res;
-    RECV_BUF recv_buf;
-    char url[256];
-    int ret;
-    strcpy(url, frontier.to_visit[url_num]);
-    curl_handle = easy_handle_init(&recv_buf, url);
-    res = curl_easy_perform(curl_handle);
-    ret = process_data(curl_handle, &recv_buf);
-
-    cleanup(curl_handle, &recv_buf);
-
-    if (ret == 1 || ret == 0){ // 1 = response messed up - 0 means success
-        // move to next url // recursively call pipeline??
-    }
-    else if (ret == 2){
-        // error happened, move to next url???????
-    }
-
-    // take in url
-    
-    // send request
-    
-    //check response
-
-    //Error check
-    // If response HTTP/1.1 5XX || HTTP/1.1 4XX
-        // return 1
-    // Else if response HTTP/1.1 3XX
-        // feed the 'curl_easy_setopt' with the 'CURLOPT_FOLLOWLOCATION'
-        // AND THE 'CURLOPT_MAXREDIRS' allows us to specify the # of redirects
-    // Else if response HTTP/1.1 2XX
-        // check the type of field
-        // If HTML Page
-            // Collect the urls and add to frontier
-            // return 0
-        // Else if PNG
-            // Check Png header (need to download)
-            // add to png url list
-            // return 0
-
-
-    return 0;
-}
-
-
