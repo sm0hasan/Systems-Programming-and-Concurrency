@@ -2,7 +2,7 @@
  * To use paster you can try pasting in the terminal, "./paster -t 10 -n 3".
  * This is where -t signifies the number of threads and -n signifies which image to be used.
  */
-
+//
 //Libraries
 #include <stdio.h>
 #include <stdlib.h>
